@@ -20,11 +20,11 @@
 trans_beta <- function(beta, name){
   beta %>% as.data.frame() %>%
     rownames_to_column() %>%
-    separate(rowname, c("Trait", "Marker"), "_", extra ="merge") %>%
+    separate(rowname, c("Trait", "Marker"), "_", extra = "merge") %>%
     group_by(Trait) %>%
     nest(.key = Beta) %>%
     mutate(Beta = map(Beta, function(x){
-      x[match(name,x$Marker),] %>%
+      x[match(name, x$Marker), ] %>%
         select (-Marker)
     }
     )) %>%
@@ -55,8 +55,8 @@ trans_beta <- function(beta, name){
 ord_beta <- function(beta, name){
   beta %>% as.data.frame() %>%
     rownames_to_column() %>%
-    separate(rowname, c("Trait", "Marker"), "_", extra ="merge") %>%
-    mutate(ord = match(Marker,name)) %>% arrange(ord) %>%
+    separate(rowname, c("Trait", "Marker"), "_", extra = "merge") %>%
+    mutate(ord = match(Marker, name)) %>% arrange(ord) %>%
     select(-Trait, -Marker, -ord)
 }
 
@@ -102,7 +102,7 @@ univ_y <- function(y){
 #' @export
 TPR <- function(b_hat, b){
   TP <- sum(b_hat != 0 & b != 0)
-  P <- sum(b !=0)
+  P <- sum(b != 0)
   TP / P
 }
 
@@ -119,7 +119,7 @@ TPR <- function(b_hat, b){
 #' @export
 FPR <- function(b_hat, b){
   FN <- sum(b_hat != 0 & b == 0)
-  N  <- sum(b ==0)
+  N  <- sum(b == 0)
   FN / N
 }
 
@@ -134,9 +134,9 @@ FPR <- function(b_hat, b){
 getGraphe <- function(group){
   G      <- list(conn = list(), weight = list())
   G[[1]] <- lapply(1:length(group), function(i){
-    as.integer(setdiff(which(group == group[i]),i))
+    as.integer(setdiff(which(group == group[i]), i))
   })
-  G[[2]] <-lapply(1:length(group), function(i){
+  G[[2]] <- lapply(1:length(group), function(i){
     rep(1, (length(which(group == group[i])) - 1))
   })
   return(G)
@@ -144,8 +144,6 @@ getGraphe <- function(group){
 }
 
 #' @export
-sel_ols <- function(b,y,x){
-
-
-}
-
+sel_ols <- function(b, y, x){
+"touc"
+  }

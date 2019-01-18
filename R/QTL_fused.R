@@ -27,7 +27,7 @@ mod_fused <- R6Class("mod_fused",
     ratio = 1e-3, nlambda2 = 100){
     self$mod <-  private$tb %>%
       mutate(Model = map(Data,
-        ~fused_lasso(X = private$x, response =., G= self$graphe,
+        ~fused_lasso(X = private$x, response = ., G = self$graphe,
           lambda2 = lambda2, lambda1  = lambda1,
           ratio = ratio, nlambda2 = nlambda2)
                               ))
@@ -38,15 +38,15 @@ mod_fused <- R6Class("mod_fused",
           return(a)
       }),
         Intercept = map(Model, ~.$Intercept),
-        Lambda1 = map(Model,~.$lambda1),
-        Lambda2 = map(Model,~.$lambda2),
+        Lambda1 = map(Model, ~.$lambda1),
+        Lambda2 = map(Model, ~.$lambda2),
         Df = map(Beta, ~.x %>%
           as.matrix() %>%
           as.data.frame() %>%
           mutate(group = self$group) %>%
           group_by(group) %>%
           summarise_all(sum) %>%
-          summarise_all(~sum(.!=0)) %>%
+          summarise_all(~sum(. != 0)) %>%
           select(-group))
         )
   }
@@ -56,8 +56,8 @@ mod_fused <- R6Class("mod_fused",
 #'
 #' @export
 mod_fused_univ <- R6Class("mod_fused_univ", inherit = mod_fused,
-  private= list(r = NULL),
-  public = list(
+  private = list(r = NULL),
+  public  = list(
     initialize = function(x, y, sep = "\\."){
       super$initialize(x, y)
       self$group <- get_group(private$name_x, sep = sep)
@@ -69,9 +69,10 @@ mod_fused_univ <- R6Class("mod_fused_univ", inherit = mod_fused,
 #' Description of the function
 #' @export
 mod_fused_multi <- R6Class("mod_fused_multi", inherit = mod_fused,
-  private= list(r = NULL),
-  public = list(
-    initialize = function(x, y,  Sigma_12inv = diag(1, ncol(as.data.frame(y))), univ = FALSE){
+  private = list(r = NULL),
+  public  = list(
+    initialize = function(x, y,  Sigma_12inv = diag(1, ncol(as.data.frame(y))),
+                          univ = FALSE){
       super$initialize(x, y, univ = univ, Sigma_12inv = Sigma_12inv)
     }
   ))
@@ -81,10 +82,12 @@ mod_fused_multi <- R6Class("mod_fused_multi", inherit = mod_fused,
 #' Description of the function
 #'
 #' @export
-mod_fused_multi_both <- R6Class("mod_fused_multi_both", inherit = mod_fused_multi,
+mod_fused_multi_both <- R6Class("mod_fused_multi_both",
+  inherit = mod_fused_multi,
   public = list(
-    initialize = function(x, y,univ = FALSE, Sigma_12inv = diag(1, ncol(as.data.frame(y)))){
-      super$initialize(x, y,univ = FALSE, Sigma_12inv = diag(1, ncol(as.data.frame(y))))
+    initialize = function(x, y, univ = FALSE,
+                          Sigma_12inv = diag(1, ncol(as.data.frame(y)))){
+      super$initialize(x, y, univ = FALSE, Sigma_12inv = Sigma_12inv)
       self$group <- get_group_both(private$name_x, r = private$r)
       self$graphe <- getGraphe(self$group)
     }
@@ -93,10 +96,12 @@ mod_fused_multi_both <- R6Class("mod_fused_multi_both", inherit = mod_fused_mult
 #' Description of the function
 #'
 #' @export
-mod_fused_multi_regr <- R6Class("mod_fused_multi_regr", inherit = mod_fused_multi,
+mod_fused_multi_regr <- R6Class("mod_fused_multi_regr",
+  inherit = mod_fused_multi,
   public = list(
-    initialize = function(x, y,univ = FALSE, Sigma_12inv = diag(1, ncol(as.data.frame(y)))){
-      super$initialize(x, y,univ = FALSE, Sigma_12inv = diag(1, ncol(as.data.frame(y))))
+    initialize = function(x, y, univ = FALSE,
+                          Sigma_12inv = diag(1, ncol(as.data.frame(y)))){
+      super$initialize(x, y, univ = FALSE, Sigma_12inv = Sigma_12inv)
       self$group <- get_group_marker(private$name_x, r = private$r)
       self$graphe <- getGraphe(self$group)
     }

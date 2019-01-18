@@ -1,0 +1,35 @@
+mod_fus2_univ <- R6Class("mod_fus2_univ",
+  inherit = "mod_lasso",
+  public = list(
+    initialize = function(X, Y, group = NULL){
+      if(is.null(group)) stop("group must be specified")
+      X  <- as.matrix(X)
+      p  <- ncol(X)
+      X1 <- model.matrix(~group + group:X - 1)
+      X  <- cbind(X1, X)
+      b  <- (3 * p - a * p + 2) / (2 * p )
+      penalty.factor <- c(0, 0, rep(b, (ncol(X1) - 2)), rep(a, p))
+      super$initialize(X, Y, penalty.factor = penalty.factor)
+    }
+  ))
+
+
+mod_fus2_resp <- R6Class("mod_fus2_resp",
+ inherit = "mod_lasso",
+ public = list(
+  initialize = function(X, Y){
+    X <- as.matrix(X)
+    q <- ncol(Y)
+    if (q != 2) stop("Y must have two columns to use fus2resp")
+    if (is.null(colnames(Y))) colnames(Y) <- paste0("rep", 1:q)
+    X <- bdiag(rep(list(X), q)) %>% as.matrix()
+    group <- rep(colnames(Y), each = nrow(Y))
+    Y <- Y %>% as.matrix() %>%  as.numeric()
+    p <- ncol(X)
+    X1  <- model.matrix(~group + group:X - 1)
+    X <- cbind(X1, X)
+    b <- (3 * p - a * p + 2) / (2 * p )
+    penalty.factor <- c(0, 0, rep(b, (ncol(X1) - 2)), rep(a, p))
+    super$initialize(X, Y, penalty.factor = penalty.factor)
+  }
+))
