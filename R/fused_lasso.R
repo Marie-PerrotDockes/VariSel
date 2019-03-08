@@ -23,8 +23,8 @@ if (is.null(lambda2)) {
 }
 weight_l1 <- rep(1, ncol(X))
 mod<- FusedLasso::fusedlasso(X, response, graph = G,
-                             addIntercept = F, family = "gaussian", lambda2 = lambda2,
-                             lambda1 = lambda1, wLambda1 = weight_l1, accuracy = 1e-6)
+         addIntercept = FALSE, family = "gaussian", lambda2 = lambda2,
+         lambda1 = lambda1, wLambda1 = weight_l1, accuracy = 1e-6)
 return(mod)
 }
 
@@ -57,8 +57,8 @@ cv_fused_lasso <- function(X, response, G, lambda2 = NULL, lambda1  = 0,
     mutate(response = response) %>% vfold_cv()
   weight_l1 <- rep(1, ncol(X))
   my_fus <- partial(fusedlasso,  graph = G,
-                               addIntercept = F, family = "gaussian", lambda2 = lambda2,
-                               lambda1 = lambda1, wLambda1 = weight_l1, accuracy = 1e-6)
+              addIntercept = FALSE, family = "gaussian", lambda2 = lambda2,
+              lambda1 = lambda1, wLambda1 = weight_l1, accuracy = 1e-6)
  de<- dat %>%
     mutate(reg = map(splits, function(x){
       my_fus(y = as.tibble(x) %>% pull(response),

@@ -133,10 +133,10 @@ FPR <- function(b_hat, b){
 #' @export
 getGraphe <- function(group){
   G      <- list(conn = list(), weight = list())
-  G[[1]] <- lapply(1:length(group), function(i){
+  G[[1]] <- lapply(seq_along(group), function(i){
     as.integer(setdiff(which(group == group[i]), i))
   })
-  G[[2]] <- lapply(1:length(group), function(i){
+  G[[2]] <- lapply(seq_along(group), function(i){
     rep(1, (length(which(group == group[i])) - 1))
   })
   return(G)

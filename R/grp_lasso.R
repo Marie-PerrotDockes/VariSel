@@ -38,7 +38,8 @@ get_group_both <-function(name_x, sep = "\\.", r){
 }
 #' Description of the function
 #' @export
-grp_lasso <- function(X,y, group, lambda = NULL,		dfmax = as.integer(max(group)) + 1,
+grp_lasso <- function(X,y, group, lambda = NULL,
+                      dfmax = as.integer(max(group)) + 1,
                       pmax = min(dfmax * 1.2, as.integer(max(group)))){
   # Y <- as.matrix(Y)
   # r <- ncol(Y)
@@ -228,9 +229,11 @@ summary.stabsel <- function(st, cutoff = 0.85, map, mrk2lg){
 
     mp <- suppressWarnings( as.numeric(map[,2]))
     names(mp) <- map$V1
-    cbind.data.frame(trait, marker, allele, linkage_group = mrk2lg[marker], position =mp[marker] , Probability = st$max[select], idx = 0)
+    cbind.data.frame(trait, marker, allele, linkage_group = mrk2lg[marker],
+                     position =mp[marker] , Probability = st$max[select], idx = 0)
     } else {
-      cbind.data.frame(trait = 0, marker = 0, allele = 0, linkage_group = 0, position =0 , probability = 0, idx = 0)
+      cbind.data.frame(trait = 0, marker = 0, allele = 0, linkage_group = 0,
+                       position =0 , probability = 0, idx = 0)
 
 }
 }
@@ -262,7 +265,8 @@ summary.stabsel <- function(st, cutoff = 0.85, map, mrk2lg){
 grpLassoQTL <- function(X, Y, marker, map,
                         PFER=1, B=500, cutoff=0.85,  nb.cores, sep ="\\.", mrk2lg, type_group="both"){
   Y   <- as.matrix(Y)
-  st  <- gglasso_st_tot(X, Y, group = NULL, sep = sep, nb.cores = nb.cores, B = 500, PFER = PFER, type_group = type_group)
+  st  <- gglasso_st_tot(X, Y, group = NULL, sep = sep, nb.cores = nb.cores,
+                        B = 500, PFER = PFER, type_group = type_group)
   summary(st, cutoff = cutoff, map, mrk2lg)
 }
 

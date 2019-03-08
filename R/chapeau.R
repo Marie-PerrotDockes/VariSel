@@ -129,16 +129,18 @@ bt_error <- function(X, Y, type,
   if(type == "fus2mod_univ"){
     res_MSE <- cbind.data.frame(X, Y, group) %>%
       bootstraps(times) %>%
-      mutate(MSE = map(splits, ~rsamples_to_mse(., type, resp,
-                                                Sigma_12inv, grp = group,
-                                                lambda = mod_tot$res$Lambda))) %>%
+      mutate(MSE = map(splits,
+        ~rsamples_to_mse(., type, resp,
+            Sigma_12inv, grp = group,
+            lambda = mod_tot$res$Lambda))) %>%
       unnest(MSE)
     } else{
       res_MSE <- cbind.data.frame(X, Y) %>%
         bootstraps(times) %>%
-        mutate(MSE = map(splits, ~rsamples_to_mse(., type, resp,
-                                                  Sigma_12inv,
-                                                  lambda = mod_tot$res$Lambda))) %>%
+        mutate(MSE = map(splits,
+          ~rsamples_to_mse(., type, resp,
+            Sigma_12inv,
+            lambda = mod_tot$res$Lambda))) %>%
         unnest(MSE)
     }
 list(res_MSE, mod_tot)
@@ -161,7 +163,7 @@ compar_type <- function(X, Y, types,
                 Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
                 group= NULL, a = 1, times = 10){
   result <- types %>% as.list() %>% tibble() %>%
-   transmute(compar = map(., ~bt_error(X, Y, .,
+   transmute(compar = future_map(., ~bt_error(X, Y, .,
                               Sigma_12inv = Sigma_12inv, group = group, a = a ,
                               times = times)))
 

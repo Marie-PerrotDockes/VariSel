@@ -36,17 +36,21 @@ test_that("univ coef eq gglasso", {
     group_by(Trait) %>%
     nest(.key = Data) %>%
     mutate(Data = map(Data, ~.$value),
-           Beta = map(Data, ~ gglasso(x = as.matrix(X_ord), y = ., group = group_ord)$beta %>%
+           Beta = map(Data, ~ gglasso(x = as.matrix(X_ord),
+                                      y = ., group = group_ord)$beta %>%
              as.data.frame() %>%
              rownames_to_column())) %>%
-   unnest(Beta, .drop = TRUE) %>% gather(-Trait, -rowname, key= key, value = value) %>%
-  transmute(value = paste(round(value,5),Trait,rowname, key,sep="_")) %>% pull(value)
+   unnest(Beta, .drop = TRUE) %>%
+   gather(-Trait, -rowname, key= key, value = value) %>%
+   transmute(value = paste(round(value,5),Trait,rowname, key,sep="_")) %>%
+   pull(value)
 
-
- touc <- mod$res %>% mutate(Beta = map(Beta,~ as.data.frame(.) %>%
-                                         rownames_to_column()) ) %>%
+  touc <- mod$res %>%
+    mutate(Beta = map(Beta,~ as.data.frame(.) %>%
+                        rownames_to_column())) %>%
     unnest(Beta,.drop=TRUE) %>% gather(-Trait, -rowname, key= key, value = value)  %>%
-   transmute(value = paste(round(value,5),Trait,rowname, key,sep="_")) %>% pull(value)
+    transmute(value = paste(round(value,5),Trait,rowname, key,sep="_")) %>%
+    pull(value)
 
   expect_setequal(tac, touc )
 })
