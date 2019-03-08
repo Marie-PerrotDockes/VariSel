@@ -8,11 +8,12 @@
 #' @param group an optional vector with 2 modalities use only if type = "fus2mod_univ",
 #'  the coefficients will be abble to be distinct for the two groups but encourage to be fused
 #'
+#'@importFrom R6 R6Class
 #' @return
 #' @export
 type_to_varisel <- function(X, Y, type,
                             Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
-                            group){
+                            group,  a = 1){
   mod <- switch(type,
     "group_univ"         =  mod_group_univ$new(X, Y),
 
@@ -36,9 +37,9 @@ type_to_varisel <- function(X, Y, type,
                             Sigma_12inv = Sigma_12inv,
                             univ = FALSE),
 
-    "fus2mod_univ"       = mod_lasso$new(X, Y, univ = TRUE, group = group),
+    "fus2mod_univ"       = mod_fus2_univ$new(X, Y,group = group,  a = a),
 
-    "fus2resp"           = mod_fus2_resp$new(X, Y, univ = TRUE))
+    "fus2resp"           = mod_fus2_resp$new(X, Y,  a = a))
   return(mod)
 }
 
@@ -53,15 +54,23 @@ type_to_varisel <- function(X, Y, type,
 #' @export
 rsamples_to_mse <- function(rsamp, type, resp,
                            Sigma_12inv = diag(1, length(resp)),
-                           penalty.factor = NULL){
+                           lambda = NULL, grp = NULL){
  Y_tr <- rsamp %>% analysis() %>% select(resp)
- X_tr <- rsamp %>% analysis() %>% select(-resp)
+ X_tr <- rsamp %>% analysis() %>% select(-c(resp, grp))
  Y_t <- rsamp %>% assessment() %>% select(resp)
- X_t <- rsamp %>% assessment() %>% select(-resp)
- mod <- type_to_varisel(X_tr, Y_tr, type, Sigma_12inv, penalty.factor)
- mod$predict(new_x = X_t)
- if (!mod$univ){
-   y     <- (list(as.numeric(as.matrix(Y_t))))
+ X_t <- rsamp %>% assessment() %>% select(-c(resp, grp))
+ if(!is.null(grp)){
+   group_tr <- rsamp %>% analysis() %>% select(grp)
+   group_t <- rsamp %>% assessment() %>% select(grp)
+ } else{
+   group_tr <- NULL
+   new_group <- NULL
+ }
+ mod <- type_to_varisel(X_tr, Y_tr, type, Sigma_12inv, group = group_tr)
+ mod$predict(new_x = X_t, lambda = lambda, new_group = new_group_t,
+             names_y = resp)
+ if (!mod$univ | type =="fus2resp"){
+   y     <- list(as.numeric(as.matrix(Y_t)))
    trait <- rep(colnames(Y_t), each = nrow(Y_t))
    a     <- mod$res %>%
      mutate(New_y  = y,
@@ -111,40 +120,28 @@ rsamples_to_mse <- function(rsamp, type, resp,
 bt_error <- function(X, Y, type,
                      Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
                      group = NULL, a = 1, times = 10){
-  if (type == "fus2mod_univ"){
-    X   <- as.matrix(X)
-    p   <- ncol(X)
-    X1  <- model.matrix(~group + group:X - 1)
-    X   <- cbind(X1, X)
-    b   <- (3 * p - a * p + 2) / (2 * p )
-    penalty.factor <- c(0, 0, rep(b, (ncol(X1) - 2)), rep(a, p))
-  } else{
-    if (type == "fus2resp"){
-      X <- as.matrix(X)
-      q <- ncol(Y)
-      if (q != 2) stop("Y must have two columns to use fus2resp")
-      if (is.null(colnames(Y))) colnames(Y) <- paste0("rep", 1:q)
-      X <- bdiag(rep(list(X), q)) %>% as.matrix()
-      group <- rep(colnames(Y), each = nrow(Y))
-      Y <- Y %>% as.matrix() %>%  as.numeric()
-      p <- ncol(X)
-      X1  <- model.matrix(~group + group:X - 1)
-      X <- cbind(X1, X)
-      b <- (3 * p - a * p + 2) / (2 * p )
-      penalty.factor <- c(0, 0, rep(b, (ncol(X1) - 2)), rep(a, p))
-    }else{
-      penalty.factor <- NULL
-    }
-  }
-  Y <- as.data.frame(Y)
+  if(!is.data.frame(Y))  Y <- as.data.frame(Y)
   if (is.null(colnames(Y))) colnames(Y) <- paste("rep", 1:ncol(Y), sep = "_")
   resp <- colnames(Y)
-  cbind.data.frame(X, Y) %>%
-    bootstraps(times) %>%
-    mutate(MSE = map(splits, ~rsamples_to_mse(., type, resp,
-                                Sigma_12inv, penalty.factor))) %>%
-    unnest(MSE)
+  mod_tot <- type_to_varisel(X, Y, type, Sigma_12inv, group)
+  mod_tot$estime()
 
+  if(type == "fus2mod_univ"){
+    res_MSE <- cbind.data.frame(X, Y, group) %>%
+      bootstraps(times) %>%
+      mutate(MSE = map(splits, ~rsamples_to_mse(., type, resp,
+                                                Sigma_12inv, grp = group,
+                                                lambda = mod_tot$res$Lambda))) %>%
+      unnest(MSE)
+    } else{
+      res_MSE <- cbind.data.frame(X, Y) %>%
+        bootstraps(times) %>%
+        mutate(MSE = map(splits, ~rsamples_to_mse(., type, resp,
+                                                  Sigma_12inv,
+                                                  lambda = mod_tot$res$Lambda))) %>%
+        unnest(MSE)
+    }
+list(res_MSE, mod_tot)
 }
 
 
@@ -163,11 +160,20 @@ bt_error <- function(X, Y, type,
 compar_type <- function(X, Y, types,
                 Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
                 group= NULL, a = 1, times = 10){
-  types %>% as.list() %>% tibble() %>%
+  result <- types %>% as.list() %>% tibble() %>%
    transmute(compar = map(., ~bt_error(X, Y, .,
-                              Sigma_12inv, group, a, times))) %>%
+                              Sigma_12inv = Sigma_12inv, group = group, a = a ,
+                              times = times)))
+
+  Models <- result %>% mutate(Models = map(compar, ~extract2(.,2))) %>%
+    select(-compar) %>% mutate(Type = types)
+  res_MSE <- result %>% mutate(MSE = map(compar, ~extract2(.,1))) %>%
+    select(-compar) %>%
    unnest()
+  return(list(res_MSE, Models = Models))
 }
+
+## renvoyer que le meilleur lambda
 
 #' Title
 #'
@@ -181,31 +187,7 @@ compar_type <- function(X, Y, types,
 chapeau <- function(X, Y, type,
             Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
             group= NULL, a = 1){
-  if (type == "fus2mod_univ"){
-    X  <- as.matrix(X)
-    p  <- ncol(X)
-    X1 <- model.matrix(~group + group:X - 1)
-    X  <- cbind(X1, X)
-    b  <- (3 * p - a * p + 2) / (2 * p )
-    penalty.factor <- c(0, 0, rep(b, (ncol(X1) - 2)), rep(a, p))
-  } else{
-    if (type == "fus2resp"){
-      X <- as.matrix(X)
-      q <- ncol(Y)
-      if (q != 2) stop("Y must have two columns to use fus2resp")
-      if (is.null(colnames(Y))) colnames(Y) <- paste0("rep", 1:q)
-      X     <- bdiag(rep(list(X), q)) %>% as.matrix()
-      group <- rep(colnames(Y), each = nrow(Y))
-      Y     <- Y %>% as.matrix() %>%  as.numeric()
-      p     <- ncol(X)
-      X1    <- model.matrix(~group + group:X - 1)
-      X     <- cbind(X1, X)
-      b     <- (3 * p - a * p + 2) / (2 * p )
-      penalty.factor <- c(0, 0, rep(b, (ncol(X1) - 2)), rep(a, p))
-    }else{
-      penalty.factor <- NULL
-    }
-  }
+
   mod  <- type_to_varisel(X, Y, type, Sigma_12inv, penalty.factor)
   mod$estime()
   univ <- mod$univ

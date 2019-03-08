@@ -38,7 +38,7 @@ get_group_both <-function(name_x, sep = "\\.", r){
 }
 #' Description of the function
 #' @export
-grp_lasso <- function(X,y, group, 		dfmax = as.integer(max(group)) + 1,
+grp_lasso <- function(X,y, group, lambda = NULL,		dfmax = as.integer(max(group)) + 1,
                       pmax = min(dfmax * 1.2, as.integer(max(group)))){
   # Y <- as.matrix(Y)
   # r <- ncol(Y)
@@ -49,7 +49,9 @@ grp_lasso <- function(X,y, group, 		dfmax = as.integer(max(group)) + 1,
   # Eg <- expand.grid(colnames(X), colnames(Y))
   # colnames(X_ord) <- paste(Eg[,2],Eg[,1], sep ="_")[ord]
   # y <- as.numeric(as.matrix(Y))
-  mod <- gglasso(x = X_ord, y = y, group = group, dfmax = dfmax, pmax = pmax)
+  mod <- gglasso(x = X_ord, y = y, group = group,
+                 dfmax = dfmax, pmax = pmax,
+                 lambda = lambda)
   a <- mod$beta
   mod$beta <- a[match(colnames(X),rownames(a)),]
   mod$group <- group

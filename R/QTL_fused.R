@@ -16,21 +16,33 @@
 #'mod <- fl2(y, regressors, group)
 #'colors <- c(rep("grey",2), rep('green',2),rep('black', 6), rep(c("orange","blue"), 2), 'darkgreen', rep('yellow',3), rep('purple',2))
 #'matplot(mod$lambda ,t(mod$beta),type='l',col=colors)
-#'#' @import R6 Matrix gglasso tidyverse glmnet stabs magrittr viridis stringr FusedLasso
+#' @import R6 Matrix gglasso tidyverse glmnet stabs magrittr viridis stringr FusedLasso
+#'@importFrom R6 R6Class
 #' @export
 mod_fused <- R6Class("mod_fused",
   inherit = VariSel,
   public = list(
   group = NULL,
   graphe = NULL,
-  estime = function( lambda2 = NULL, lambda1  = 0.002,
+  estime = function( lambda = list(lambda2 = NULL, lambda1  = 0.002),
     ratio = 1e-3, nlambda2 = 100){
+
+    if(!is.null(lambda)){
     self$mod <-  private$tb %>%
-      mutate(Model = map(Data,
-        ~fused_lasso(X = private$x, response = ., G = self$graphe,
-          lambda2 = lambda2, lambda1  = lambda1,
+      mutate(Lambda = lambda,
+        Model = map2(Data, Lambda,
+        ~fused_lasso(X = private$x, response = .x, G = self$graphe,
+          lambda2 = .y$lambda2, lambda1  = .y$lambda1,
           ratio = ratio, nlambda2 = nlambda2)
                               ))
+    }   else{
+      self$mod <-  private$tb %>%
+        mutate(Model = map(Data
+                 ~fused_lasso(X = private$x, response = .x, G = self$graphe,
+                  lambda2 = lambda$lambda2, lambda1  = lambda$lambda1,
+                  ratio = ratio, nlambda2 = nlambda2)
+               ))
+    }
     self$res <- self$mod  %>%
       mutate( Beta = map(Model, function(mod){
           a <- mod$beta
@@ -38,8 +50,10 @@ mod_fused <- R6Class("mod_fused",
           return(a)
       }),
         Intercept = map(Model, ~.$Intercept),
-        Lambda1 = map(Model, ~.$lambda1),
-        Lambda2 = map(Model, ~.$lambda2),
+        # Lambda1 = map(Model, ~.$lambda1),
+        # Lambda2 = map(Model, ~.$lambda2),
+        Lambda = map(Model, ~ list(lambda1 = .$lambda1,
+                                   lambda2 = .$lambda2)),
         Df = map(Beta, ~.x %>%
           as.matrix() %>%
           as.data.frame() %>%

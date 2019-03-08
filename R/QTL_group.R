@@ -22,12 +22,21 @@ mod_group <- R6Class("mod_group",
   inherit = VariSel,
   public = list(
     group = NULL,
-    estime = function(){
-      self$mod <-  private$tb %>%
-      mutate(Model = map(Data,
-        ~grp_lasso(private$x, .,
-        self$group)
-      ))
+    estime = function(lambda = NULL){
+      if(!is.null(lambda)) {
+        self$mod <- private$tb %>%
+         mutate( Lambda = lambda,
+          Model = map2(Data, Lambda,
+           ~grp_lasso(private$x, .x,
+            self$group, lambda = .y)
+        ))
+      }else{
+        self$mod <- private$tb %>%
+          mutate(Model = map(Data,
+            ~grp_lasso(private$x, .,
+              self$group)
+              ))
+      }
       self$res <- self$mod  %>%
         mutate( Beta = map(Model, ~.$beta),
           Intercept = map(Model, ~.$b0),

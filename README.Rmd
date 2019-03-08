@@ -1,0 +1,69 @@
+---
+title: 'VariSel : An a R package to perform variable selection in linear models'
+author: "Marie"
+date: "3 février 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(VariSel)
+require(tidyverse)
+require(tidymodels)
+require(viridis)
+theme_set(theme_bw() + theme_light() +
+            theme(strip.background = element_rect(fill = "white", color ="gray"), 
+                  strip.text = element_text(color = "black"),
+                  text = element_text(face="bold", family="LM Roman 10", size =18),
+                  legend.position = "bottom" , legend.key.width = unit(2.5,units = "cm"),
+                  legend.key.height = unit(0.3,units = "cm"),
+                  plot.title = element_text(hjust = 0.5, size =32),
+                  panel.grid = element_blank()))
+scale_fill_continuous <- function(...) scale_fill_viridis()
+scale_fill_discrete <- function(...) scale_fill_viridis(discrete = TRUE)
+scale_colour_discrete <- function(...) scale_color_viridis()
+scale_colour_discrete <- function(...) scale_color_viridis(discrete = TRUE)
+
+
+```
+
+## Introduction 
+
+```{r}
+load('datatest_VVIV04.Rdata')
+```
+
+
+## Model selection 
+
+```{r}
+ct <- compar_type(X[,1:10], Y, types = c("fus2resp",  "group_univ" ,"group_multi_both" ,"group_multi_marker" ,
+                              "fused_univ" ,"fused_multi_both","fused_multi_regr",
+                              "lasso_univ","lasso_multi" ))
+
+```
+
+
+```{r}
+
+ ct %>% mutate(key = as.numeric(gsub('s','',key))) %>%
+  ggplot(aes(x = key, color = type,fill = type, y = value)) +
+  geom_smooth() + theme_bw() +
+  labs(y = "MSE", title ="Bootstrap MSE", x = "Regularization Path")  
+```
+
+```{r}
+
+ ct %>% mutate(key = as.numeric(gsub('s','',key))) %>%
+  ggplot(aes(x = key, color = type,fill = type, y = value)) +
+  geom_smooth() + theme_bw() +
+  labs(y = "MSE", title ="Bootstrap MSE", x = "Regularization Path") + 
+  facet_grid(~Trait) 
+```
+
+
+## 
+
+get_best_model : prend un compar type et selon le critère choisi ressort le meilleur modele 
+ps compar type doit aussi sortir le BIC et ses amis. 
+

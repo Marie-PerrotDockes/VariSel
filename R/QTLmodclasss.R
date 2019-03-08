@@ -77,8 +77,8 @@ VariSel <- R6Class("VariSel",
                         log(private$n) * .y))
   },
 
-  predict = function(new_x ){
-    if (is.null(self$mod))     self$estime()
+  predict = function(new_x, lambda = NULL, ... ){
+    if (is.null(self$mod))     self$estime(lambda = lambda)
     if (!self$univ) new_x <- bdiag(rep(list(as.matrix(new_x)), private$r))
     self$res <- self$res %>%
       mutate( New_pred = map2(Beta, Intercept, ~ cbind(1, as.matrix(new_x)) %*%

@@ -36,13 +36,23 @@ mod_lasso <- R6Class("mod_lasso",
     },
 
     estime = function(lambda = NULL, standardize = FALSE, intercept = FALSE){
-      self$mod <-  private$tb %>%
-        mutate(Model = purrr::map(Data,
-          ~ glmnet(private$x, .,
-              lambda = lambda,
+      if(!is.null(lambda)){
+        self$mod <-  private$tb %>%
+          mutate( Lambda = lambda,
+            Model = purrr::map2(Data, Lambda,
+            ~ glmnet(private$x, .x,
+              lambda = .y,
               standardize = standardize,
               intercept = intercept,
               penalty.factor = self$penalty.factor)))
+      }else{
+        self$mod <-  private$tb %>%
+          mutate(Model = purrr::map(Data,
+              ~ glmnet(private$x, .,
+                standardize = standardize,
+                intercept = intercept,
+                penalty.factor = self$penalty.factor)))
+      }
       self$res <- self$mod  %>%
         mutate( Beta = map(Model, ~.$beta %>% as.matrix()),
           Intercept = map(Model, ~.$a0),

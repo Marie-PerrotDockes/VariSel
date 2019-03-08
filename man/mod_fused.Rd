@@ -35,6 +35,5 @@ y <- scale(y)
 mod <- fl2(y, regressors, group)
 colors <- c(rep("grey",2), rep('green',2),rep('black', 6), rep(c("orange","blue"), 2), 'darkgreen', rep('yellow',3), rep('purple',2))
 matplot(mod$lambda ,t(mod$beta),type='l',col=colors)
-#' @import R6 Matrix gglasso tidyverse glmnet stabs magrittr viridis stringr FusedLasso
 }
 \keyword{datasets}

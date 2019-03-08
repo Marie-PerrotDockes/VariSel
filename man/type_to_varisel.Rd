@@ -5,10 +5,19 @@
 \title{Title}
 \usage{
 type_to_varisel(X, Y, type, Sigma_12inv = diag(1,
-  ncol(as.data.frame(Y))), penalty.factor)
+  ncol(as.data.frame(Y))), group, a = 1)
 }
 \arguments{
-\item{a}{}
+\item{X}{design matrix}
+
+\item{Y}{response matrix}
+
+\item{type}{type of models}
+
+\item{Sigma_12inv}{the inverse of the square root of the covariance matrix of Y}
+
+\item{group}{an optional vector with 2 modalities use only if type = "fus2mod_univ",
+the coefficients will be abble to be distinct for the two groups but encourage to be fused}
 }
 \description{
 Title
