@@ -61,6 +61,7 @@ mod_lasso <- R6Class("mod_lasso",
             as.tibble() %>%
             summarise_all( ~sum(. != 0)))) %>%
           select(-Model)
+      super$estime()
   },
 
     sel_cv = function(s = "lambda.min"){

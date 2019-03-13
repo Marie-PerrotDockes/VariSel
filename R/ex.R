@@ -68,3 +68,15 @@
 #   mutate(Group = str_extract_all(key,paste(grp_value,collapse="|"))) %>% pull(Group)
 #
 # paste0('{',paste(paste0("group",unique(group)), collapse =","),'}')
+#
+# plan(sequential) ;
+# ct <- compar_type(X[,1:10], Y, types = c("fus2resp",  "group_univ" ,"group_multi_both" ,"group_multi_marker" ,
+#                                          "fused_univ" ,"fused_multi_both","fused_multi_regr",
+#                                          "lasso_univ","lasso_multi" ))
+#
+# lapin <- function(a){
+# u <- a +4
+#     browser()
+#
+#   print('mieou')
+# }

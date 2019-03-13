@@ -11,6 +11,7 @@ require(VariSel)
 require(tidyverse)
 require(tidymodels)
 require(viridis)
+require(furrr)
 theme_set(theme_bw() + theme_light() +
             theme(strip.background = element_rect(fill = "white", color ="gray"), 
                   strip.text = element_text(color = "black"),
@@ -37,10 +38,38 @@ load('datatest_VVIV04.Rdata')
 ## Model selection 
 
 ```{r}
+system.time(
+ct <- compar_type(X[,1:10], Y, types = c("fus2resp",  "group_univ" ,"group_multi_both" ,"group_multi_marker" ,
+                              "fused_univ" ,"fused_multi_both","fused_multi_regr",
+                              "lasso_univ","lasso_multi" )))
+
+```
+
+
+```{r}
+plan(multiprocess)
+system.time(
+ct <- compar_type(X[,1:10], Y, types = c("fus2resp",  "group_univ" ,"group_multi_both" ,"group_multi_marker" ,
+                              "fused_univ" ,"fused_multi_both","fused_multi_regr",
+                              "lasso_univ","lasso_multi" )))
+
+```
+
+
+```{r}
+
+mb <- microbenchmark(
+  {plan(multiprocess) ;
+ct <- compar_type(X[,1:10], Y, types = c("fus2resp",  "group_univ" ,"group_multi_both" ,"group_multi_marker" ,
+                              "fused_univ" ,"fused_multi_both","fused_multi_regr",
+                              "lasso_univ","lasso_multi" ))}, 
+{plan(sequential) ;
 ct <- compar_type(X[,1:10], Y, types = c("fus2resp",  "group_univ" ,"group_multi_both" ,"group_multi_marker" ,
                               "fused_univ" ,"fused_multi_both","fused_multi_regr",
                               "lasso_univ","lasso_multi" ))
-
+                              },
+times = 10)
+autoplot(mb) + scale_x_discrete(labels =c("a","b"))
 ```
 
 
@@ -66,4 +95,5 @@ ct <- compar_type(X[,1:10], Y, types = c("fus2resp",  "group_univ" ,"group_multi
 
 get_best_model : prend un compar type et selon le critère choisi ressort le meilleur modele 
 ps compar type doit aussi sortir le BIC et ses amis. 
+faire une méthode compar_result qui compare les coefficients obtenu par les différents modèles. 
 

@@ -78,7 +78,8 @@ rsamples_to_mse <- function(rsamp, type, resp,
                         as.matrix() %>%
                         as.data.frame() %>%
                         mutate(Trait = trait) %>%
-                        gather(key, value, -Trait) %>% group_by(key, Trait) %>%
+                        gather(key, value, -Trait,factor_key =TRUE) %>%
+                        group_by(key, Trait) %>%
                         summarise(value = mean(value)))
             ) %>%
      select(MSE) %>%
@@ -95,7 +96,7 @@ rsamples_to_mse <- function(rsamp, type, resp,
     mutate(New_y  = y,
            MSE = map2(New_pred, New_y, ~ (.x - .y) ^ 2 %>%
                        as.data.frame() %>%
-                       gather() %>% group_by(key) %>%
+                       gather(factor_key =TRUE) %>% group_by(key) %>%
                        summarise(value = mean(value)))
            ) %>%
     select(MSE, Trait) %>%
@@ -163,7 +164,7 @@ compar_type <- function(X, Y, types,
                 Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
                 group= NULL, a = 1, times = 10){
   result <- types %>% as.list() %>% tibble() %>%
-   transmute(compar = future_map(., ~bt_error(X, Y, .,
+   transmute(compar = map(., ~bt_error(X, Y, .,
                               Sigma_12inv = Sigma_12inv, group = group, a = a ,
                               times = times)))
 
