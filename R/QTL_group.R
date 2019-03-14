@@ -50,6 +50,7 @@ mod_group <- R6Class("mod_group",
             summarise_all(~sum(. != 0)) %>%
             select(-group))
         )
+      super$estime()
     },
     sel_cv = function( s = "lambda.min"){
       self$cv <-  private$tb %>%

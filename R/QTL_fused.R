@@ -24,25 +24,25 @@ mod_fused <- R6Class("mod_fused",
   public = list(
   group = NULL,
   graphe = NULL,
-  estime = function( lambda = list(lambda2 = NULL, lambda1  = 0.002),
+  estime = function( lambda = NULL,
     ratio = 1e-3, nlambda2 = 100){
-
     if(!is.null(lambda)){
     self$mod <-  private$tb %>%
-      mutate(Lambda = lambda,
-        Model = map2(Data, Lambda,
+      mutate(
+       Lambda = lambda,
+       Model = map2(Data, Lambda,
         ~fused_lasso(X = private$x, response = .x, G = self$graphe,
           lambda2 = .y$lambda2, lambda1  = .y$lambda1,
           ratio = ratio, nlambda2 = nlambda2)
-                              ))
+       ))
     }   else{
       self$mod <-  private$tb %>%
-        mutate(Model = map(Data
+        mutate(Model = map(Data,
                  ~fused_lasso(X = private$x, response = .x, G = self$graphe,
-                  lambda2 = lambda$lambda2, lambda1  = lambda$lambda1,
                   ratio = ratio, nlambda2 = nlambda2)
                ))
     }
+
     self$res <- self$mod  %>%
       mutate( Beta = map(Model, function(mod){
           a <- mod$beta
@@ -63,6 +63,7 @@ mod_fused <- R6Class("mod_fused",
           summarise_all(~sum(. != 0)) %>%
           select(-group))
         )
+    super$estime()
   }
 ))
 

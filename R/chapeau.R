@@ -23,12 +23,12 @@ type_to_varisel <- function(X, Y, type,
     "group_multi_marker" = mod_group_multi_marker$new(X, Y,
                             Sigma_12inv = Sigma_12inv),
 
-    "fused_univ"         = mod_group_univ$new(X, Y),
+    "fused_univ"         = mod_fused_univ$new(X, Y),
 
-    "fused_multi_both"   = mod_group_multi_both$new(X, Y,
+    "fused_multi_both"   = mod_fused_multi_both$new(X, Y,
                             Sigma_12inv = Sigma_12inv),
 
-    "fused_multi_regr"   = mod_group_multi_marker$new(X, Y,
+    "fused_multi_regr"   = mod_fused_multi_regr$new(X, Y,
                             Sigma_12inv = Sigma_12inv),
 
     "lasso_univ"         = mod_lasso$new(X, Y, univ = TRUE),
@@ -37,7 +37,7 @@ type_to_varisel <- function(X, Y, type,
                             Sigma_12inv = Sigma_12inv,
                             univ = FALSE),
 
-    "fus2mod_univ"       = mod_fus2_univ$new(X, Y,group = group,  a = a),
+    "fus2mod_univ"       = mod_fus2_univ$new(X, Y, group = group,  a = a),
 
     "fus2resp"           = mod_fus2_resp$new(X, Y,  a = a))
   return(mod)
@@ -169,11 +169,28 @@ compar_type <- function(X, Y, types,
                               times = times)))
 
   Models <- result %>% mutate(Models = map(compar, ~extract2(.,2))) %>%
-    select(-compar) %>% mutate(Type = types)
+    select(-compar) %>% mutate(type = types)
   res_MSE <- result %>% mutate(MSE = map(compar, ~extract2(.,1))) %>%
     select(-compar) %>%
    unnest()
-  return(list(res_MSE, Models = Models))
+  all_res <- Models %>%
+    mutate(BIC = map(Models,~.$res$BIC),
+           Lambda = map(Models,~.$res$Lambda)) %>%
+    select(-Models) %>%
+    unnest() %>%
+    mutate(BIC = map(BIC, ~gather(., key = "key", value ="BIC")),
+           Lambda = map(Lambda, ~ if(is.list(.)){
+             as_tibble(.)
+           } else{
+             enframe(., name = NULL, value ="lambda1")
+           })
+    ) %>%
+    unnest() %>%
+    left_join(res_MSE, by = c("key", "type", "Trait")) %>%
+    rename(MSE_boot = value)
+
+
+  return(list(res_MSE= res_MSE, all_res= all_res, Models = Models))
 }
 
 ## renvoyer que le meilleur lambda
@@ -224,5 +241,10 @@ cv.chapeau <- function(X, Y, univ, type,
 predict.chapeau <- function(X, Y, univ, type,
                     Sigma_12inv = diag(1, ncol(as.data.frame(Y)))){
 
+"d"
+}
+
+
+get_best_model <- function(ct, criterion = "BIC"){
 "d"
 }

@@ -75,14 +75,14 @@ autoplot(mb) + scale_x_discrete(labels =c("a","b"))
 
 ```{r}
 
- ct %>% mutate(key = as.numeric(gsub('s','',key))) %>%
-  ggplot(aes(x = key, color = type,fill = type, y = value)) +
-  geom_smooth() + theme_bw() +
+ ct$all_res %>% group_by(key, type) %>% 
+  summarise(MSE = mean(MSE_boot), BIC = mean(BIC), lambda1 = mean(lambda1)) %>% 
+  ggplot(aes(x = lambda1, color = type, fill = type, y = BIC, shape = type)) +
+  geom_line() + theme_bw() + geom_point()
   labs(y = "MSE", title ="Bootstrap MSE", x = "Regularization Path")  
 ```
 
 ```{r}
-
  ct %>% mutate(key = as.numeric(gsub('s','',key))) %>%
   ggplot(aes(x = key, color = type,fill = type, y = value)) +
   geom_smooth() + theme_bw() +
@@ -92,6 +92,12 @@ autoplot(mb) + scale_x_discrete(labels =c("a","b"))
 
 
 ## 
+
+Chere marie du future,
+
+DANS la fonction compar_type chapeau à la fin il faut rajouter dans res_all le trait du quel on parle. 
+Pour cela il faut changer partout privet$y en sefl$y puis rajouter self$y dedans !!
+
 
 get_best_model : prend un compar type et selon le critère choisi ressort le meilleur modele 
 ps compar type doit aussi sortir le BIC et ses amis. 

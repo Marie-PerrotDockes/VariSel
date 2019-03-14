@@ -13,8 +13,8 @@
 fused_lasso <- function(X, response, G, lambda2 = NULL, lambda1  = 0,
                         ratio = 1e-3, nlambda2 = 100){
 if (is.null(lambda2)) {
-  lambdas <- fusedlassoMaxLambdas(X, response,
-                                  family = "gaussian", graph = G)
+  lambdas <-fusedlassoMaxLambdas(X, response,
+        family = "gaussian", graph = G)
   lambda2.max <- lambdas$maxLambda2
 
   lambda2     <- 10 ^ seq(log10(lambda2.max),
@@ -24,7 +24,8 @@ if (is.null(lambda2)) {
 weight_l1 <- rep(1, ncol(X))
 mod<- FusedLasso::fusedlasso(X, response, graph = G,
          addIntercept = FALSE, family = "gaussian", lambda2 = lambda2,
-         lambda1 = lambda1, wLambda1 = weight_l1, accuracy = 1e-6)
+         lambda1 = lambda1, wLambda1 = weight_l1, accuracy = 1e-6,
+         verbose = FALSE)
 return(mod)
 }
 
