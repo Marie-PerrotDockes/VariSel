@@ -78,7 +78,7 @@ rsamples_to_mse <- function(rsamp, type, resp,
                         as.matrix() %>%
                         as.data.frame() %>%
                         mutate(Trait = trait) %>%
-                        gather(key, value, -Trait,factor_key =TRUE) %>%
+                        gather(key, value, -Trait, factor_key = FALSE) %>%
                         group_by(key, Trait) %>%
                         summarise(value = mean(value)))
             ) %>%
@@ -96,7 +96,8 @@ rsamples_to_mse <- function(rsamp, type, resp,
     mutate(New_y  = y,
            MSE = map2(New_pred, New_y, ~ (.x - .y) ^ 2 %>%
                        as.data.frame() %>%
-                       gather(factor_key =TRUE) %>% group_by(key) %>%
+                       gather(factor_key = FALSE) %>%
+                       group_by(key) %>%
                        summarise(value = mean(value)))
            ) %>%
     select(MSE, Trait) %>%
@@ -167,15 +168,29 @@ compar_type <- function(X, Y, types,
    transmute(compar = map(., ~bt_error(X, Y, .,
                               Sigma_12inv = Sigma_12inv, group = group, a = a ,
                               times = times)))
-
   Models <- result %>% mutate(Models = map(compar, ~extract2(.,2))) %>%
     select(-compar) %>% mutate(type = types)
   res_MSE <- result %>% mutate(MSE = map(compar, ~extract2(.,1))) %>%
     select(-compar) %>%
    unnest()
   all_res <- Models %>%
-    mutate(BIC = map(Models,~.$res$BIC),
-           Lambda = map(Models,~.$res$Lambda)) %>%
+    mutate(Trait = map(Models, ~.$trait),
+           BIC = map(Models,~if(length(.$res$BIC) != 1){
+             .$res$BIC
+           }else{
+             rep(.$res$BIC, length(.$trait))
+           }),
+           Lambda = map(Models,~if(length(.$res$Lambda) != 1){
+             .$res$Lambda
+           }else{
+             rep(.$res$Lambda, length(.$trait))
+           }),
+           Name = map(Models,~if(length(.$name_y) != 1){
+             .$name_y
+           }else{
+             rep(.$name_y, length(.$trait))
+           })
+           ) %>%
     select(-Models) %>%
     unnest() %>%
     mutate(BIC = map(BIC, ~gather(., key = "key", value ="BIC")),
@@ -185,6 +200,7 @@ compar_type <- function(X, Y, types,
              enframe(., name = NULL, value ="lambda1")
            })
     ) %>%
+    unnest(Trait) %>%
     unnest() %>%
     left_join(res_MSE, by = c("key", "type", "Trait")) %>%
     rename(MSE_boot = value)
@@ -245,6 +261,59 @@ predict.chapeau <- function(X, Y, univ, type,
 }
 
 
-get_best_model <- function(ct, criterion = "BIC"){
-"d"
+
+#' Title
+#'
+#' @param ct
+#' @param criterion
+#' @param sepy
+#'
+#' @return
+#' @export
+#'
+#' @examples
+get_best_models <- function(ct, criterion = "MSE_boot", sepy="_"){
+ct$all_res %>% group_by(key, Name, type) %>%
+    select(-id) %>% summarise_if(is.numeric, mean) %>% ungroup() %>%
+    group_by(Name, type) %>%
+    slice(which.min(MSE_boot)) %>%
+    mutate(num = case_when(
+      grepl("s", key)~ as.numeric(gsub("s","",key)) + 2,
+      grepl("V", key)~ as.numeric(gsub("V","",key)) + 1
+    )) %>% group_by(type) %>% nest() %>%
+    left_join(ct$Models, by ="type") %>%
+    mutate(data = map2(data,Models, ~.x %>%
+         mutate(Beta=.y$res$Beta ,
+          Beta = map2(num, Beta, ~.y %>%
+            as.matrix() %>%
+            as.data.frame() %>%
+            rownames_to_column() %>%
+            select(coef =.x,rowname) %>%
+            separate(rowname, sep = "__",
+                     into = c("Trait", "Marker"),
+                     fill = "left"))) %>%
+         unnest(Beta,.drop = FALSE))
+                       ) %>%
+    unnest(data) %>%
+    mutate(Trait = case_when(
+      is.na(Trait) ~ Name,
+     ( !is.na(Trait)) ~Trait
+      ))
+
+    }
+
+
+#' Title
+#'
+#' @param bmd
+#'
+#' @return
+#' @export
+#'
+#' @examples
+plot_md <- function(bmd){
+  md %>% filter(coef!=0 & type !="fus2resp") %>%
+    ggplot(aes(y = type, x = Marker, fill =coef)) +
+    geom_tile() + theme(axis.text.x = element_text(angle =90))+
+    facet_wrap(~Trait, scale = "free")
 }

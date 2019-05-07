@@ -30,7 +30,6 @@ VariSel <- R6Class(
     df = NULL,
     s = NULL,
     n = NULL,
-    trait = NULL,
     name_x =  NULL,
     tb = NULL
   ),
@@ -42,6 +41,8 @@ VariSel <- R6Class(
     cv = NULL,
     stab = NULL,
     univ = NULL,
+    name_y = NULL,
+    trait = NULL,
     initialize = function(x,
                           y,
                           univ = TRUE,
@@ -56,8 +57,8 @@ VariSel <- R6Class(
       private$n <- nrow(private$x)
       private$name_x <- colnames(private$x)
       self$sepy <- sepy
+      if (is.null(self$trait))  self$trait <- as.list(colnames(private$y))
       if (!univ) {
-        private$trait <- colnames(private$y)
         private$y <-
           as.numeric(as.matrix(private$y) %*% Sigma_12inv) %>%
           as.data.frame()
@@ -68,6 +69,7 @@ VariSel <- R6Class(
         colnames(private$x) <-
           paste(Eg[, 2], Eg[, 1], sep = sepy)
       }
+      self$name_y <- colnames(private$y)
       private$tb <- private$y %>%
         gather(key = "Trait") %>%
         group_by(Trait) %>%
@@ -106,8 +108,13 @@ VariSel <- R6Class(
         ))
 
     },
-
-
+    get_beta = function(){
+      if(is.null(self$res$Beta)){self$estime()}
+      do.call(rbind.data.frame, as.matrrix(self$res$Beta)) %>%
+        rownames_to_column() %>%
+        separate(rowname, sep =self$sepy,
+                 into = c("Trait","Marker"))
+    },
     plot_error = function(print = TRUE) {
       if (is.null(self$res$MSE))
         self$predict()

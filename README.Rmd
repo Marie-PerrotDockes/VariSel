@@ -96,7 +96,7 @@ autoplot(mb) + scale_x_discrete(labels =c("a","b"))
 Chere marie du future,
 
 DANS la fonction compar_type chapeau à la fin il faut rajouter dans res_all le trait du quel on parle. 
-Pour cela il faut changer partout privet$y en sefl$y puis rajouter self$y dedans !!
+Pour cela il faut changer partout privatect$y en sefl$y puis rajouter self$y dedans !!
 
 
 get_best_model : prend un compar type et selon le critère choisi ressort le meilleur modele 
