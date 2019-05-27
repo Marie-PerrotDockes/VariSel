@@ -13,23 +13,23 @@
 #' @export
 type_to_varisel <- function(X, Y, type,
                             Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
-                            group,  a = 1){
+                            group,  a = 1,  sep = "\\."){
   mod <- switch(type,
-    "group_univ"         =  mod_group_univ$new(X, Y),
+    "group_univ"         =  mod_group_univ$new(X, Y, sep = sep),
 
     "group_multi_both"   = mod_group_multi_both$new(X, Y,
-                            Sigma_12inv = Sigma_12inv),
+                            Sigma_12inv = Sigma_12inv, sep = sep),
 
     "group_multi_marker" = mod_group_multi_marker$new(X, Y,
-                            Sigma_12inv = Sigma_12inv),
+                            Sigma_12inv = Sigma_12inv, sep = sep),
 
-    "fused_univ"         = mod_fused_univ$new(X, Y),
+    "fused_univ"         = mod_fused_univ$new(X, Y, sep = sep),
 
     "fused_multi_both"   = mod_fused_multi_both$new(X, Y,
-                            Sigma_12inv = Sigma_12inv),
+                            Sigma_12inv = Sigma_12inv, sep = sep),
 
     "fused_multi_regr"   = mod_fused_multi_regr$new(X, Y,
-                            Sigma_12inv = Sigma_12inv),
+                            Sigma_12inv = Sigma_12inv, sep = sep),
 
     "lasso_univ"         = mod_lasso$new(X, Y, univ = TRUE),
 
@@ -54,7 +54,7 @@ type_to_varisel <- function(X, Y, type,
 #' @export
 rsamples_to_mse <- function(rsamp, type, resp,
                            Sigma_12inv = diag(1, length(resp)),
-                           lambda = NULL, grp = NULL){
+                           lambda = NULL, grp = NULL,  sep = "\\."){
  Y_tr <- rsamp %>% analysis() %>% select(resp)
  X_tr <- rsamp %>% analysis() %>% select(-c(resp, grp))
  Y_t <- rsamp %>% assessment() %>% select(resp)
@@ -66,7 +66,9 @@ rsamples_to_mse <- function(rsamp, type, resp,
    group_tr <- NULL
    new_group <- NULL
  }
- mod <- type_to_varisel(X_tr, Y_tr, type, Sigma_12inv, group = group_tr)
+ mod <- type_to_varisel(X_tr, Y_tr, type,
+                        Sigma_12inv, group = group_tr,
+                        sep = sep)
  mod$predict(new_x = X_t, lambda = lambda, new_group = new_group_t,
              names_y = resp)
  if (!mod$univ | type =="fus2resp"){
@@ -121,17 +123,18 @@ rsamples_to_mse <- function(rsamp, type, resp,
 #' @export
 bt_error <- function(X, Y, type,
                      Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
-                     group = NULL, a = 1, times = 10){
+                     group = NULL, a = 1, times = 10,
+                      sep = "\\."){
   if(!is.data.frame(Y))  Y <- as.data.frame(Y)
   if (is.null(colnames(Y))) colnames(Y) <- paste("rep", 1:ncol(Y), sep = "_")
   resp <- colnames(Y)
-  mod_tot <- type_to_varisel(X, Y, type, Sigma_12inv, group)
+  mod_tot <- type_to_varisel(X, Y, type, Sigma_12inv, group, sep = sep)
   mod_tot$estime()
 
   if(type == "fus2mod_univ"){
     res_MSE <- cbind.data.frame(X, Y, group) %>%
       bootstraps(times) %>%
-      mutate(MSE = map(splits,
+      mutate(MSE = future_map(splits,
         ~rsamples_to_mse(., type, resp,
             Sigma_12inv, grp = group,
             lambda = mod_tot$res$Lambda))) %>%
@@ -139,7 +142,7 @@ bt_error <- function(X, Y, type,
     } else{
       res_MSE <- cbind.data.frame(X, Y) %>%
         bootstraps(times) %>%
-        mutate(MSE = map(splits,
+        mutate(MSE = future_map(splits,
           ~rsamples_to_mse(., type, resp,
             Sigma_12inv,
             lambda = mod_tot$res$Lambda))) %>%
@@ -163,11 +166,11 @@ list(res_MSE, mod_tot)
 #' @export
 compar_type <- function(X, Y, types,
                 Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
-                group= NULL, a = 1, times = 10){
+                group= NULL, a = 1, times = 10,  sep = "\\."){
   result <- types %>% as.list() %>% tibble() %>%
    transmute(compar = map(., ~bt_error(X, Y, .,
                               Sigma_12inv = Sigma_12inv, group = group, a = a ,
-                              times = times)))
+                              times = times,  sep = sep)))
   Models <- result %>% mutate(Models = map(compar, ~extract2(.,2))) %>%
     select(-compar) %>% mutate(type = types)
   res_MSE <- result %>% mutate(MSE = map(compar, ~extract2(.,1))) %>%
@@ -209,8 +212,22 @@ compar_type <- function(X, Y, types,
   return(list(res_MSE= res_MSE, all_res= all_res, Models = Models))
 }
 
-## renvoyer que le meilleur lambda
 
+#' Title
+#'
+#' @param ct
+#'
+#' @return
+#' @export
+#'
+#' @examples
+plot_ct <- function(ct){
+  ct$all_res %>% group_by(key, type) %>% filter(type!="fus2resp") %>%
+    summarise(MSE = mean(MSE_boot), BIC = mean(BIC), lambda1 = mean(lambda1)) %>%
+    ggplot(aes(x = lambda1, color = type, fill = type, y = BIC, shape = type)) +
+    geom_line() + theme_bw() + geom_point()+ scale_x_log10()+
+    labs(y = "MSE", title ="Bootstrap MSE", x = "Regularization Path")
+}
 #' Title
 #'
 #' @param X
@@ -228,7 +245,7 @@ chapeau <- function(X, Y, type,
   mod$estime()
   univ <- mod$univ
   res  <- mod$res %>%
-    mutate(Beta = map(Beta, ~as.data.frame(t(.)) %>%
+    mutate(Beta = map(Beta, ~as.data.frame(t(as.matrix(.))) %>%
                          rowid_to_column(var = "num_lambda")),
            Lambda = map(Lambda, ~as_tibble(.) %>%
                           dplyr::rename(Lambda = value))) %>%
@@ -276,7 +293,7 @@ get_best_models <- function(ct, criterion = "MSE_boot", sepy="_"){
 ct$all_res %>% group_by(key, Name, type) %>%
     select(-id) %>% summarise_if(is.numeric, mean) %>% ungroup() %>%
     group_by(Name, type) %>%
-    slice(which.min(MSE_boot)) %>%
+    slice(which.min(!!parse_expr(criterion))) %>%
     mutate(num = case_when(
       grepl("s", key)~ as.numeric(gsub("s","",key)) + 2,
       grepl("V", key)~ as.numeric(gsub("V","",key)) + 1
@@ -311,8 +328,9 @@ ct$all_res %>% group_by(key, Name, type) %>%
 #' @export
 #'
 #' @examples
-plot_md <- function(bmd){
-  md %>% filter(coef!=0 & type !="fus2resp") %>%
+plot_md <- function(bmd, types =NULL){
+  if(is.null(types)) types <- unique(bmd$type)
+  bmd %>% filter(coef!=0 & type !="fus2resp" & type %in% types) %>%
     ggplot(aes(y = type, x = Marker, fill =coef)) +
     geom_tile() + theme(axis.text.x = element_text(angle =90))+
     facet_wrap(~Trait, scale = "free")

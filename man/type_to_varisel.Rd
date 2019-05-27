@@ -5,7 +5,7 @@
 \title{Title}
 \usage{
 type_to_varisel(X, Y, type, Sigma_12inv = diag(1,
-  ncol(as.data.frame(Y))), group, a = 1)
+  ncol(as.data.frame(Y))), group, a = 1, sep = "\\\\.")
 }
 \arguments{
 \item{X}{design matrix}

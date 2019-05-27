@@ -89,8 +89,10 @@ VariSel <- R6Class(
           Ehat = map2(Data, Yhat, ~ .x - .y),
           Ehat = map(Ehat, ~ as.data.frame(.)),
           MSE = map(Ehat, ~ summarise_all(., ~ sum(. ^ 2))),
-          BIC = map2(MSE, Df, ~ private$n * log(.x / private$n) +
-                       log(private$n) * .y)
+          # BIC = map2(MSE, Df, ~ private$n * log(.x / private$n) +
+          #              log(private$n) * .y)
+          BIC = pmap(list(MSE, Df, Yhat), function(x ,y, z)
+            log(x /length(z)) + log(length(z)) * y)
         )
     },
 

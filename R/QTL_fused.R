@@ -101,9 +101,9 @@ mod_fused_multi_both <- R6Class("mod_fused_multi_both",
   inherit = mod_fused_multi,
   public = list(
     initialize = function(x, y, univ = FALSE,
-                          Sigma_12inv = diag(1, ncol(as.data.frame(y)))){
+                          Sigma_12inv = diag(1, ncol(as.data.frame(y))), sep = "\\."){
       super$initialize(x, y, univ = FALSE, Sigma_12inv = Sigma_12inv)
-      self$group <- get_group_both(private$name_x, r = private$r)
+      self$group <- get_group_both(private$name_x, sep = sep, r = private$r)
       self$graphe <- getGraphe(self$group)
     }
  ))
@@ -115,9 +115,9 @@ mod_fused_multi_regr <- R6Class("mod_fused_multi_regr",
   inherit = mod_fused_multi,
   public = list(
     initialize = function(x, y, univ = FALSE,
-                          Sigma_12inv = diag(1, ncol(as.data.frame(y)))){
+                          Sigma_12inv = diag(1, ncol(as.data.frame(y))), sep = ";"){
       super$initialize(x, y, univ = FALSE, Sigma_12inv = Sigma_12inv)
-      self$group <- get_group_marker(private$name_x, r = private$r)
+      self$group <- get_group_marker(private$name_x, sep =sep, r = private$r)
       self$graphe <- getGraphe(self$group)
     }
 ))
