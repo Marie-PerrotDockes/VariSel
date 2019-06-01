@@ -248,3 +248,5 @@ predict.chapeau <- function(X, Y, univ, type,
 get_best_model <- function(ct, criterion = "BIC"){
 "d"
 }
+
+
