@@ -1,3 +1,13 @@
+type_to__S12inv <- function(X, Y, type){
+
+  if(nrow(X) > ncol(X)){residus <- lm(as.matrix(Y)~X -1)$residuals
+  } else{
+    residus <- sapply(1:q,function(i){Y[,i]-X%*%MASS::lm.ridge(as.matrix(Y[,i])~X -1)$coef})
+  }
+
+
+}
+
 
 #' Title
 #'

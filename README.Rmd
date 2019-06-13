@@ -34,7 +34,6 @@ scale_colour_discrete <- function(...) scale_color_viridis(discrete = TRUE)
 ## Introduction 
 
 
-
 ## Un exemple simple :
 
 Nous avons deux variables réponses, 5 regresseurs et un variable catégorielle à deux modalités. 
