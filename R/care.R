@@ -9,6 +9,12 @@ prm <- data.frame(parameter = c("type", "lambda", "lambda1", "lambda2"),
 VariSel_mod$parameters <- prm
 
 VariSelGrid <- function(X, Y, Sigma_12inv,  search = "grid") {
+  y <-  as.numeric(Y %*% Sigma_12inv)
+  x <-    kronecker(Matrix::t(Sigma_12inv), X)
+  mysd <- function(y) sqrt(sum((y-mean(y))^2)/length(y))
+  sx <- scale(x,scale=apply(x, 2, mysd))
+  sy <- as.vector(scale(y, scale=mysd(y)))
+  max(abs(colSums(sx*sy)))
   library(kernlab)
   ## This produces low, middle and high values for sigma
   ## (i.e. a vector with 3 elements).
