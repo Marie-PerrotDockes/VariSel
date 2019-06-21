@@ -112,7 +112,7 @@ VariSel <- R6Class(
     },
     get_beta = function(){
       if(is.null(self$res$Beta)){self$estime()}
-      do.call(rbind.data.frame, as.matrrix(self$res$Beta)) %>%
+      do.call(rbind.data.frame, as.matrix(self$res$Beta)) %>%
         rownames_to_column() %>%
         separate(rowname, sep =self$sepy,
                  into = c("Trait","Marker"))

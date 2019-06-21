@@ -3,52 +3,234 @@ title: "VariSel: An R package to perform variable selection in multivariate line
 subtitle: "Or how can we preserve the wine of South of France ?"
 author: "Marie Perrot-Dockès, Julien Chiquet, Laure Sansonnet"
 date: "20 juin 2019"
-output: ioslides_presentation
+output: 
+  beamer_presentation :
+    theme: "Rochester"
+    colortheme: "vert"
+header-includes:
+- \usepackage{tikz}
+- \usepackage{natbib}
+- \usepackage{pgfplots}
+- \newcommand{\Am}{\textrm{Argmin}}
+- \newcommand{\bX}{\boldsymbol{X}}
+- \newcommand{\bY}{\boldsymbol{Y}}
+- \newcommand{\bS}{\boldsymbol{S}}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set()
 library(VariSel)
+library(tidyverse)
 ```
 
-## The wine is in danger
+# A simlpe vision of the immune system :
+\framesubtitle{Dialogue between Th lymphocyte and dendritic-cells}
+ 
 
-## How can we save it ?
+```{tikz, tikz-ex2, fig.cap = "DC Th dialogue", fig.ext = 'pdf', echo =FALSE}
+\definecolor{vert}{RGB}{ 109,205,89}
+\definecolor{bleu}{RGB}{93,139,172}
+\definecolor{marron}{RGB}{172,126,93}
+\definecolor{marronfonce}{RGB}{120,88,65}
+\definecolor{i1}{RGB}{122,181,168}
+\definecolor{i2}{RGB}{122,165,181}
+\definecolor{i3}{RGB}{122,181,139}
+\definecolor{dc}{RGB}{206,184,181}
+\definecolor{dc2}{RGB}{123, 87, 229}
+\definecolor{lt}{RGB}{181,203,206}
+\tikzstyle{line} = [draw, -latex, color = marron, line width=1pt]
+\tikzstyle{block} = [rectangle, draw, fill=vert!20, draw= vert!80, text = marronfonce,
+text width=3.5em, text centered, rounded corners, minimum height=2em,line width=1pt]
+\tikzstyle{block3} = [rectangle, draw, fill=vert!10, draw= vert!90, text = marronfonce,
+text width=3em, text centered, rounded corners, minimum height=1.1em,line width=0.7pt]
+\tikzstyle{inp} = [rectangle, draw,  text = marronfonce,
+text width=4.4em, text centered, rounded corners, minimum height=1em,line width=1pt]
+  \begin{tikzpicture}[node distance = 2cm, auto]
+    % nodes
+     \node(DC){\includegraphics[width= 0.24\textwidth]{dendritic-cell.png}}; 
+      \node[left of = DC, node distance = 3 cm,  color = gray, xshift =-1cm](Pert){Perturbators}; 
+       \node[right of = DC, node distance = 4 cm](TL){\includegraphics[width= 0.19\textwidth]{lt4-crop.pdf}}; 
+       \node[right of = TL, node distance = 3 cm](L){};
+        \node[below of = DC, node distance =2.2 cm,text width= 0.22\textwidth,text centered,color =dc!60!black]{Monocyte derived \;  \; Dendritic cell};
+      \node[below of = TL, node distance =2.2 cm,text width= 0.22\textwidth, text centered,color =lt!60!black]{ Naive Th lymphocytes};
+      \node[above of = TL, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 1.7 cm, color =lt!70!black]{ Th signals};
+      \node[above of =DC, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 2.2 cm, color =dc!70!black]{ DC signals};
+    
+       \path [line,color = dc] ([yshift=-0.8 cm,xshift=- 0.1 cm]DC.east) -- ([yshift=-0.8 cm, xshift = 0.6cm]TL.west);
+        \path [line,color = dc] ([yshift=-0.4 cm,xshift=- 0.1 cm]DC.east) -- ([yshift=-0.4 cm, xshift = 0.6cm]TL.west);
+         \path [line,color = dc] ([xshift=- 0.1 cm]DC.east) --  ([xshift = 0.6cm]TL.west);
+         \path [line,color = dc] ([yshift=0.4 cm, xshift=- 0.1 cm]DC.east) --  ([yshift=0.4 cm, xshift = 0.6cm]TL.west);
+          \path [line,color = dc] ([yshift=0.8 cm, xshift=- 0.1 cm]DC.east) --  ([yshift=0.8 cm, xshift = 0.6cm]TL.west);
+
+\path [line, color = gray](Pert) -- ([xshift =-0.6cm]DC.west);
+ \path [line,color = lt]([xshift= -0.4cm, yshift = -0.7cm]TL.east) -- ([yshift = -0.7cm]L.west);
+  \path [line,color = lt]([xshift= -0.4cm, yshift = -0.35cm]TL.east) -- ([yshift = -0.35cm]L.west);
+  \path [line,color = lt] ([xshift= -0.4cm]TL.east) -- (L.west);
+  
+   \path [line,color = lt] ([xshift= -0.4cm, yshift = 0.35cm]TL.east) -- ([yshift = 0.35cm]L.west);
+   \path [line,color = lt] ([xshift= -0.4cm, yshift = 0.7cm]TL.east) -- ([yshift = 0.7cm]L.west);
+        \end{tikzpicture}
+
+\begin{tikzpicture}[node distance = 2cm, auto]
+   \node(DC){\includegraphics[width= 0.24\textwidth]{dendritic-cell2.png}}; 
+      \node[left of = DC, node distance = 3 cm,  color = gray, xshift =-1cm](Pert){Perturbators}; 
+       \node[right of = DC, node distance = 4 cm](TL){\includegraphics[width= 0.19\textwidth]{lt4-crop.pdf}}; 
+       \node[right of = TL, node distance = 3 cm](L){};
+        \node[below of = DC, node distance =2.2 cm,text width= 0.22\textwidth,text centered,color =dc2!60!black]{Blood \; \; \; Dendritic cell}; 
+      \node[below of = TL, node distance =2.2 cm,text width= 0.22\textwidth, text centered,color =lt!60!black]{ Naive Th lymphocytes};
+      \node[above of = TL, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 1.7 cm, color =lt!70!black]{ Th signals};
+      \node[above of =DC, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 2.2 cm, color =dc2!70!black]{ DC signals};
+    
+       \path [line,color = dc2] ([yshift=-0.8 cm,xshift=- 0.1 cm]DC.east) -- ([yshift=-0.8 cm, xshift = 0.6cm]TL.west);
+        \path [line,color = dc2] ([yshift=-0.4 cm,xshift=- 0.1 cm]DC.east) -- ([yshift=-0.4 cm, xshift = 0.6cm]TL.west);
+         \path [line,color = dc2] ([xshift=- 0.1 cm]DC.east) --  ([xshift = 0.6cm]TL.west);
+         \path [line,color = dc2] ([yshift=0.4 cm, xshift=- 0.1 cm]DC.east) --  ([yshift=0.4 cm, xshift = 0.6cm]TL.west);
+          \path [line,color = dc2] ([yshift=0.8 cm, xshift=- 0.1 cm]DC.east) --  ([yshift=0.8 cm, xshift = 0.6cm]TL.west);
+
+\path [line, color = gray](Pert) -- ([xshift =-0.6cm]DC.west);
+ \path [line,color = lt]([xshift= -0.4cm, yshift = -0.7cm]TL.east) -- ([yshift = -0.7cm]L.west);
+  \path [line,color = lt]([xshift= -0.4cm, yshift = -0.35cm]TL.east) -- ([yshift = -0.35cm]L.west);
+  \path [line,color = lt] ([xshift= -0.4cm]TL.east) -- (L.west);
+  
+   \path [line,color = lt] ([xshift= -0.4cm, yshift = 0.35cm]TL.east) -- ([yshift = 0.35cm]L.west);
+   \path [line,color = lt] ([xshift= -0.4cm, yshift = 0.7cm]TL.east) -- ([yshift = 0.7cm]L.west);
+
+        \end{tikzpicture}
+
+```
 
 
-## Model Presentation : 
-
-## Model Presentation : 
-
-## Model Presentation : 
 
 
-## Differents penalties : for differents point of view
+# Statistical modelling 
 
-## Exemple of coefficients matrices
+\begin{itemize}
+\item \textbf{Dataset description:}
+
+\begin{itemize}
+\item $\boldsymbol{X}$:  $n\times p$ design matrix
+\item $\boldsymbol{Y}$:  $n\times q$  response matrix
+\end{itemize}
+
+\item \textbf{Question:} Which variables influence the responses?
+
+\item \textbf{Approach:}
+\begin{itemize}
+ \item Variable selection in 
+$$
+\boldsymbol{Y}=\boldsymbol{XB}+\boldsymbol{E},
+$$
+where  \begin{itemize}
+\item $\boldsymbol{B}$:   $p\times q$  \textbf{sparse} coefficients matrix
+\item $\boldsymbol{E}$: $n\times q$ error matrix  with $$\forall  i\in\{1,\dots, n\}, \; (E_{i,1},\dots,E_{i,q})\stackrel{iid}{\sim}~\mathcal{N}(0,\boldsymbol{\Sigma}_q)$$
+
+\end{itemize}
+\item We take the dependence into account by estimating $\boldsymbol{\Sigma}_q$. 
+\end{itemize}
+\end{itemize}
 
 
-##  VariSel for one model type 
-Different parameters 
+# Differents penalties : for differents point of view
+
+\begin{itemize}
+\item \textbf{Lasso} : \textit{select variables without taking into account  potential links.}
+\begin{equation*} \label{grouplasso}
+	\widehat{b}_L = \Am_{b} \left\lbrace||y-\bX b||_2^2 + \lambda ||b||_1 \right\rbrace,
+\end{equation*}
+\item \textbf{Group-Lasso}  : \textit{select a group of variables.}
+\begin{equation*} \label{grouplasso}
+	\widehat{b}_G = \Am_{b_1, \dots, b_L} \left\lbrace||y-\sum_{1 \leq l \leq L}\bX_{(l)} b_{(l)}||_2^2 + \lambda\sum_{1 \leq l \leq L}\sqrt{p_l} ||b_l||_2\right\rbrace,
+\end{equation*}
+\item \textbf{Fused-Lasso} \citep{xin2014efficient}   :  \textit{influence a group of variables to have the same coefficient.}
+\begin{equation*}\label{fuselasso}
+	\widehat{b}_F =\Am_{b}||y-\bX b||_2^2 + \left\lbrace\lambda_1\sum_{(i,j) \in \mathcal{G}} |b_i - b_j|+ \lambda_2 ||b||_1\right\rbrace,
+\end{equation*}
+\end{itemize}
+
+# Concretely the use of the differents penalties in our  application
+
+\begin{itemize}
+\item \textbf{Lasso} can: 
+\begin{itemize}
+\item Select associations between one DC signal and one  Th signal for one DC type.
+\end{itemize}
+\item \textbf{Group-Lasso}  can: 
+\begin{itemize}
+\item Select associations between one DC signal and one  Th signal for both DC type.
+\item Select associations between one DC signals and all Th signals for one DC type.
+\item Select associations between one DC signals and all Th signals for both DC type.
+\end{itemize}
+\item \textbf{Fused-Lasso} can  : 
+\begin{itemize}
+\item Influence associations between one DC signal and one  Th signal to be the same for both DC type.
+\item Influence associations between one DC signals and all Th signals to be the same  for one DC type.
+\item Influence associations between one DC signals and all Th signals to be the same  for both DC type.
+\end{itemize}
+\end{itemize}
 
 
-##  VariSel for one model type : Outcome 
-Different parameters 
+# Exemple of coefficients matrices
 
 
-## Models selection 
+#  VariSel for one model type 
 
 
-## Models comparison 
+```{r, include=FALSE}
+load("raw_data.RData")
+load("data_Tmod_sspdc.RData")
+DC_sign <- Xbrt2[,30:36]
+T_sign <- Ybrt2[,2:5]
+dc <- as.character(dc)
+```
+
+```{r, eval=FALSE}
+X <-  model.matrix(~DC_sign:dc -1)
+mod <-  train_VariSel( Y = T_sign, 
+                       X = X, 
+                       sepx = ":", 
+                       type ="group_multi_marker",
+                       type_S12_inv= "emp")
+```
+
+```{r}
+mod <-  train_VariSel( Y = T_sign,
+                       regressors = DC_sign, 
+                       group = dc, 
+                       type ="group_multi_marker")
+```
 
 
-## Let's come back to wine!
+<!-- Different parameters :  -->
+<!-- \begin{itemize} -->
+<!-- \item $\bY$ : Matrix containing the reponse values (here the Th signals for the different samples) -->
+<!-- \item $\bX$ : optional design matrix of the model  -->
+<!-- \item \textbf{type} : type of model -->
+<!-- \item \textbf{regressors} : if X is not supplied the continuous values  -->
+<!-- \item \textbf{group} : if the samples can be divided into groups  -->
+<!-- \item \textbf{sepx} : if the columns of X can be divided into group -->
+<!-- \item \textbf{type\_S12\_inv} : specified the method use to estimate $\bS$ -->
+<!-- \end{itemize} -->
 
 
-## Conclusion
 
-## What I have not tell you 
+
+#  VariSel for one model type : Outcome 
+
+
+
+# Models selection 
+
+
+# Models comparison 
+
+
+# Let's come back to wine!
+
+
+# Conclusion
+
+# What I have not tell you 
 
 Come and see the vignette!
 
-## Any questions ? 
+# Any questions ? 

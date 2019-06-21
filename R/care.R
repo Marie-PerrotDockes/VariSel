@@ -36,10 +36,9 @@ filter
 
 
 get_lambda <- function(x, y, type){
-  if()
   mysd <- function(y) sqrt(sum((y-mean(y))^2)/length(y))
   sx <- scale(x,scale=apply(x, 2, mysd))
-  l <- max(abs(t(sx) %*% y))/length(y)
+  lambda.max <- max(abs(t(sx) %*% y))/length(y)
   lambda.min.ratio <- ifelse(nrow(sx)< ncol(sx), 0.01,0.0001)
   nlambda <- 100
   lambdapath <- round(exp(seq(log(lambda_max),
