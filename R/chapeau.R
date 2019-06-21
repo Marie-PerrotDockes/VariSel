@@ -347,3 +347,25 @@ plot_md <- function(bmd, types =NULL){
 }
 
 
+
+plot.VariSel<-function(mod){
+  univ <- mod$univ
+  res  <- mod$res %>%
+    mutate(Beta = map(Beta, ~as.data.frame(t(as.matrix(.))) %>%
+                        rowid_to_column(var = "num_lambda")),
+           Lambda = map(Lambda, ~as_tibble(.) %>%
+                          dplyr::rename(Lambda = value))) %>%
+    select(Lambda, Beta, Trait) %>%
+    unnest(Lambda, Beta) %>%
+    gather(-Trait, -Lambda, -num_lambda, key = Marker, value = value) %>%
+    filter(value != 0) %>% arrange(num_lambda)
+  if (type == "fus2mod_univ"){
+    res <- res %>% separate(Marker, sep = ":X", into = c("Group", "Marker")) %>%
+      mutate(Group = gsub("group", "", Group))
+  }
+  if (!univ) {
+    res <-  res %>% select(-Trait) %>%
+      separate(Marker, sep = mod$sepy, into = c("Trait", "Marker"))
+  }
+  ggplot(res, aes(x = Lambda, y= value, color = Trait)) + geom_line() + scale_x_log10()
+}
