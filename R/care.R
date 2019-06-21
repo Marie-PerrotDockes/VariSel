@@ -1,6 +1,6 @@
 VariSel_mod <- list(type = "both",
-              library = "VariSel",
-              loop = NULL)
+                    library = "VariSel",
+                    loop = NULL)
 
 prm <- data.frame(parameter = c("type", "lambda", "lambda1", "lambda2"),
                   class = c("character",rep("numeric", 2)),
@@ -11,10 +11,8 @@ VariSel_mod$parameters <- prm
 VariSelGrid <- function(X, Y, Sigma_12inv,  search = "grid") {
   y <-  as.numeric(Y %*% Sigma_12inv)
   x <-    kronecker(Matrix::t(Sigma_12inv), X)
-  mysd <- function(y) sqrt(sum((y-mean(y))^2)/length(y))
-  sx <- scale(x,scale=apply(x, 2, mysd))
-  sy <- as.vector(scale(y, scale=mysd(y)))
-  max(abs(colSums(sx*sy)))
+
+
   library(kernlab)
   ## This produces low, middle and high values for sigma
   ## (i.e. a vector with 3 elements).
@@ -35,3 +33,16 @@ VariSelGrid <- function(X, Y, Sigma_12inv,  search = "grid") {
 filter <- ksvm(type~.,data=spamtrain,kernel="rbfdot",
                kpar=list(sigma=c(0.05,0.1)),C=c(5,2),cross=3)
 filter
+
+
+get_lambda <- function(x, y, type){
+  if()
+  mysd <- function(y) sqrt(sum((y-mean(y))^2)/length(y))
+  sx <- scale(x,scale=apply(x, 2, mysd))
+  l <- max(abs(t(sx) %*% y))/length(y)
+  lambda.min.ratio <- ifelse(nrow(sx)< ncol(sx), 0.01,0.0001)
+  nlambda <- 100
+  lambdapath <- round(exp(seq(log(lambda_max),
+                              log(lambda_max*lambda.min.ratio),
+                              length.out = nlambda)), digits = 10)
+}

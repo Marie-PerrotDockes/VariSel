@@ -1,0 +1,54 @@
+---
+title: "VariSel: An R package to perform variable selection in multivariate linear model"
+subtitle: "Or how can we preserve the wine of South of France ?"
+author: "Marie Perrot-Dockès, Julien Chiquet, Laure Sansonnet"
+date: "20 juin 2019"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(VariSel)
+```
+
+## The wine is in danger
+
+## How can we save it ?
+
+
+## Model Presentation : 
+
+## Model Presentation : 
+
+## Model Presentation : 
+
+
+## Differents penalties : for differents point of view
+
+## Exemple of coefficients matrices
+
+
+##  VariSel for one model type 
+Different parameters 
+
+
+##  VariSel for one model type : Outcome 
+Different parameters 
+
+
+## Models selection 
+
+
+## Models comparison 
+
+
+## Let's come back to wine!
+
+
+## Conclusion
+
+## What I have not tell you 
+
+Come and see the vignette!
+
+## Any questions ? 
