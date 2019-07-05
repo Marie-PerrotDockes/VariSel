@@ -17,9 +17,9 @@
 #'colors <- c(rep("grey",2), rep('green',2),rep('black', 6), rep(c("orange","blue"), 2), 'darkgreen', rep('yellow',3), rep('purple',2))
 #'matplot(mod$lambda ,t(mod$beta),type='l',col=colors)
 #' @import R6 Matrix gglasso tidyverse glmnet stabs magrittr viridis stringr FusedLasso
-#'@importFrom R6 R6Class
+#' @importFrom R6 R6Class
 #' @export
-mod_fused <- R6Class("mod_fused",
+mod_fused <-  R6::R6Class("mod_fused",
   inherit = VariSel,
   public = list(
   group = NULL,
@@ -64,18 +64,37 @@ mod_fused <- R6Class("mod_fused",
           select(-group))
         )
     super$estime()
+  },
+  get_coef = function(){
+    self$coef  <- self$res %>%
+      mutate(Beta = map(Beta, ~as.data.frame(t(as.matrix(.))) %>%
+                          rowid_to_column(var = "num_lambda")),
+             Lambda = map(Lambda, ~as.tibble(.))) %>%
+      select(Lambda, Beta, Trait) %>%
+      unnest(Lambda, Beta) %>%
+      gather(-Trait, -lambda1, -lambda2, -num_lambda, key = Marker, value = value) %>%
+      filter(value != 0) %>%
+      arrange(num_lambda) %>%
+      rename(Lambda = lambda1)
+    if (!self$univ) {
+      self$coef <-  self$coef %>% select(-Trait) %>%
+        separate(Marker, sep = self$sepy, into = c("Trait", "Marker"))
+    }
+    self$coef <- self$coef %>%
+      separate(Marker, sep =self$sepx, into = c ("Reg", "group"))
+
   }
 ))
 
 #' Description of the function
 #'
 #' @export
-mod_fused_univ <- R6Class("mod_fused_univ", inherit = mod_fused,
+mod_fused_univ <-R6::R6Class("mod_fused_univ", inherit = mod_fused,
   private = list(r = NULL),
   public  = list(
-    initialize = function(x, y, sep = "\\."){
-      super$initialize(x, y)
-      self$group <- get_group(private$name_x, sep = sep)
+    initialize = function(x, y, sepx = "\\."){
+      super$initialize(x, y, sepx = sepx)
+      self$group <- get_group(private$name_x, sep = sepx)
       self$graphe <- getGraphe(self$group)
     }
  )
@@ -83,12 +102,12 @@ mod_fused_univ <- R6Class("mod_fused_univ", inherit = mod_fused,
 
 #' Description of the function
 #' @export
-mod_fused_multi <- R6Class("mod_fused_multi", inherit = mod_fused,
+mod_fused_multi <-R6::R6Class("mod_fused_multi", inherit = mod_fused,
   private = list(r = NULL),
   public  = list(
     initialize = function(x, y,  Sigma_12inv = diag(1, ncol(as.data.frame(y))),
-                          univ = FALSE){
-      super$initialize(x, y, univ = univ, Sigma_12inv = Sigma_12inv)
+                          univ = FALSE, sepx = "\\."){
+      super$initialize(x, y, univ = univ, Sigma_12inv = Sigma_12inv, sepx = sepx)
     }
   ))
 
@@ -97,13 +116,13 @@ mod_fused_multi <- R6Class("mod_fused_multi", inherit = mod_fused,
 #' Description of the function
 #'
 #' @export
-mod_fused_multi_both <- R6Class("mod_fused_multi_both",
+mod_fused_multi_both <-R6::R6Class("mod_fused_multi_both",
   inherit = mod_fused_multi,
   public = list(
     initialize = function(x, y, univ = FALSE,
-                          Sigma_12inv = diag(1, ncol(as.data.frame(y))), sep = "\\."){
-      super$initialize(x, y, univ = FALSE, Sigma_12inv = Sigma_12inv)
-      self$group <- get_group_both(private$name_x, sep = sep, r = private$r)
+                          Sigma_12inv = diag(1, ncol(as.data.frame(y))), sepx = "\\."){
+      super$initialize(x, y, univ = FALSE, Sigma_12inv = Sigma_12inv, sepx = sepx)
+      self$group <- get_group_both(private$name_x, sep = sepx, r = private$r)
       self$graphe <- getGraphe(self$group)
     }
  ))
@@ -111,13 +130,13 @@ mod_fused_multi_both <- R6Class("mod_fused_multi_both",
 #' Description of the function
 #'
 #' @export
-mod_fused_multi_regr <- R6Class("mod_fused_multi_regr",
+mod_fused_multi_regr <-R6::R6Class("mod_fused_multi_regr",
   inherit = mod_fused_multi,
   public = list(
     initialize = function(x, y, univ = FALSE,
-                          Sigma_12inv = diag(1, ncol(as.data.frame(y))), sep = ";"){
-      super$initialize(x, y, univ = FALSE, Sigma_12inv = Sigma_12inv)
-      self$group <- get_group_marker(private$name_x, sep =sep, r = private$r)
+                          Sigma_12inv = diag(1, ncol(as.data.frame(y))), sepx = ";"){
+      super$initialize(x, y, univ = FALSE, Sigma_12inv = Sigma_12inv, sepx = sepx)
+      self$group <- get_group_marker(private$name_x, sep =sepx, r = private$r)
       self$graphe <- getGraphe(self$group)
     }
 ))

@@ -18,7 +18,7 @@
 #'matplot(mod$lambda ,t(mod$beta),type='l',col=colors)
 #' @import R6 Matrix gglasso tidyverse glmnet stabs magrittr viridis stringr
 #' @export
-VariSel <- R6Class(
+VariSel <- R6::R6Class(
   "VariSel",
   private = list(
     x = NULL,
@@ -34,6 +34,7 @@ VariSel <- R6Class(
     tb = NULL
   ),
   public = list(
+    sepx = NULL,
     res = NULL,
     sepy = NULL,
     pe = NULL,
@@ -43,11 +44,14 @@ VariSel <- R6Class(
     univ = NULL,
     name_y = NULL,
     trait = NULL,
+    coef = NULL,
     initialize = function(x,
                           y,
                           univ = TRUE,
                           Sigma_12inv = diag(1, ncol(as.data.frame(y))),
-                          sepy = "__") {
+                          sepy = "__",
+                          sepx = NULL) {
+      self$sepx <- sepx
       self$univ <- univ
       private$x <- as.matrix(x)
       private$y <- as.data.frame(y)
@@ -110,12 +114,41 @@ VariSel <- R6Class(
         ))
 
     },
-    get_beta = function(){
-      if(is.null(self$res$Beta)){self$estime()}
-      do.call(rbind.data.frame, as.matrix(self$res$Beta)) %>%
-        rownames_to_column() %>%
-        separate(rowname, sep =self$sepy,
-                 into = c("Trait","Marker"))
+    get_coef = function(){
+      if(is.null(self$res)){self$estime()}
+      self$coef  <- self$res %>%
+        mutate(Beta = map(Beta, ~as.data.frame(t(as.matrix(.))) %>%
+                            rowid_to_column(var = "num_lambda")),
+               Lambda = map(Lambda, ~enframe(., name = NULL) %>%
+                              dplyr::rename(Lambda = value))) %>%
+        select(Lambda, Beta, Trait) %>%
+        unnest(Lambda, Beta) %>%
+        gather(-Trait, -Lambda, -num_lambda, key = Marker, value = value) %>%
+        filter(value != 0) %>%
+        arrange(num_lambda)
+      if (!self$univ) {
+        self$coef <-  self$coef %>% select(-Trait) %>%
+          separate(Marker, sep = self$sepy, into = c("Trait", "Marker"))
+      }
+    },
+    plot_path = function( type ="first", nb = 6){
+      if(is.null(self$coef)) self$get_coef()
+      res <- self$coef %>%
+        mutate(ret  =  paste(Reg,  Trait, sep =" on "))
+
+      sel <- res %>%  pull(ret) %>%
+        unique()
+      sel <- sel[1:nb]
+      res_sel <- res %>% filter(ret %in% sel) %>%
+        mutate(col = factor(ret, levels = unique(ret)))
+      res_other <- res %>% filter(!ret %in% sel)
+      ggplot(data = res_other,aes(x = Lambda, y = value,linetype = group,group = paste(ret, group)))+
+        geom_line(color = "lightgray") +
+        geom_line(data = res_sel,aes(color =col)) +
+        scale_x_log10() +
+        labs ( color = " ", y = "value of the coefficients", title = "Regularization Path", x = "Lambda")
+
+
     },
     plot_error = function(print = TRUE) {
       if (is.null(self$res$MSE))

@@ -25,21 +25,21 @@ type_to_varisel <- function(X, Y, type,
                             Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
                             group,  a = 1,  sep = "\\."){
   mod <- switch(type,
-    "group_univ"         =  mod_group_univ$new(X, Y, sep = sep),
+    "group_univ"         =  mod_group_univ$new(X, Y, sepx = sep),
 
     "group_multi_both"   = mod_group_multi_both$new(X, Y,
-                            Sigma_12inv = Sigma_12inv, sep = sep),
+                            Sigma_12inv = Sigma_12inv, sepx = sep),
 
-    "group_multi_marker" = mod_group_multi_marker$new(X, Y,
-                            Sigma_12inv = Sigma_12inv, sep = sep),
+    "group_multi_regr" = mod_group_multi_regr$new(X, Y,
+                            Sigma_12inv = Sigma_12inv, sepx = sep),
 
-    "fused_univ"         = mod_fused_univ$new(X, Y, sep = sep),
+    "fused_univ"         = mod_fused_univ$new(X, Y, sepx = sep),
 
     "fused_multi_both"   = mod_fused_multi_both$new(X, Y,
-                            Sigma_12inv = Sigma_12inv, sep = sep),
+                            Sigma_12inv = Sigma_12inv, sepx = sep),
 
     "fused_multi_regr"   = mod_fused_multi_regr$new(X, Y,
-                            Sigma_12inv = Sigma_12inv, sep = sep),
+                            Sigma_12inv = Sigma_12inv, sepx = sep),
 
     "lasso_univ"         = mod_lasso$new(X, Y, univ = TRUE),
 
@@ -58,7 +58,7 @@ type_to_varisel <- function(X, Y, type,
 #' Title
 #'
 #' @param rsamp a splits object with a collumn: response the response vector
-#' @param type type for varisel object
+#' @param type type of penalty to use.
 #'
 #' @return
 #' @export
@@ -174,9 +174,20 @@ list(res_MSE, mod_tot)
 #'
 #' @return
 #' @export
-compar_type <- function(X, Y, types,
-                Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
-                group= NULL, a = 1, times = 10,  sep = "\\."){
+compar_type <- function(X = NULL, Y, types,
+                Sigma_12inv = NULL,
+                group= NULL, a = 1, times = 10,  sep = "\\.",
+                 regressors = NULL,
+                type_S12_inv ="emp"){
+  if (is.null(X)){
+    if(is.null(group) | is.null(regressors)) stop('Error if the design matrix X is not supplied both group and regressors must be')
+    if(!is.matrix(regressors)) regressors <- as.matrix(regressors)
+    X <- model.matrix(~regressors:group -1)
+    colnames(X) <- gsub('regressors', "", gsub("group", "", colnames(X)))
+    sep <- ":"
+  }
+  if(!is.matrix(X)) X <- as.matrix(X)
+    if(ncol(Y) !=1 & is.null(Sigma_12inv)) Sigma_12inv <- get_S12inv(Y, X, type_S12_inv)
   result <- types %>% as.list() %>% tibble() %>%
    transmute(compar = map(., ~bt_error(X, Y, .,
                               Sigma_12inv = Sigma_12inv, group = group, a = a ,
@@ -231,12 +242,22 @@ compar_type <- function(X, Y, types,
 #' @export
 #'
 #' @examples
-plot_ct <- function(ct){
-  ct$all_res %>% group_by(key, type) %>% filter(type!="fus2resp") %>%
-    summarise(MSE = mean(MSE_boot), BIC = mean(BIC), lambda1 = mean(lambda1)) %>%
-    ggplot(aes(x = lambda1, color = type, fill = type, y = BIC, shape = type)) +
-    geom_line() + theme_bw() + geom_point()+ scale_x_log10()+
+plot_ct <- function(ct, type ="MSE"){
+  if(type == "MSE"){
+    p <- ct$all_res %>% group_by(key, type) %>% filter(type!="fus2resp") %>%
+    # summarise(MSE = mean(MSE_boot), BIC = mean(BIC), lambda1 = mean(lambda1)) %>%
+    ggplot(aes(x = lambda1, color = type, fill = type, y = MSE_boot, shape = type)) +
+    geom_smooth() + theme_bw() + scale_x_log10()+
     labs(y = "MSE", title ="Bootstrap MSE", x = "Regularization Path")
+  }
+  if(type == "BIC"){
+    p <- ct$all_res %>% group_by(key, type) %>% filter(type!="fus2resp") %>%
+      # summarise(MSE = mean(MSE_boot), BIC = mean(BIC), lambda1 = mean(lambda1)) %>%
+      ggplot(aes(x = lambda1, color = type, fill = type, y = BIC, shape = type)) +
+      geom_smooth() + theme_bw() +  scale_x_log10()+
+      labs(y = "BIC", title ="BIC", x = "Lambda")
+  }
+p
 }
 #' Title
 #'
@@ -343,29 +364,8 @@ plot_md <- function(bmd, types =NULL){
   bmd %>% filter(coef!=0 & type !="fus2resp" & type %in% types) %>%
     ggplot(aes(y = type, x = Marker, fill =coef)) +
     geom_tile() + theme(axis.text.x = element_text(angle =90))+
-    facet_wrap(~Trait, scale = "free")
+    facet_wrap(~Trait, scale = "free") +
+    scale_fill_viridis()
 }
 
 
-
-plot.VariSel<-function(mod){
-  univ <- mod$univ
-  res  <- mod$res %>%
-    mutate(Beta = map(Beta, ~as.data.frame(t(as.matrix(.))) %>%
-                        rowid_to_column(var = "num_lambda")),
-           Lambda = map(Lambda, ~as_tibble(.) %>%
-                          dplyr::rename(Lambda = value))) %>%
-    select(Lambda, Beta, Trait) %>%
-    unnest(Lambda, Beta) %>%
-    gather(-Trait, -Lambda, -num_lambda, key = Marker, value = value) %>%
-    filter(value != 0) %>% arrange(num_lambda)
-  if (type == "fus2mod_univ"){
-    res <- res %>% separate(Marker, sep = ":X", into = c("Group", "Marker")) %>%
-      mutate(Group = gsub("group", "", Group))
-  }
-  if (!univ) {
-    res <-  res %>% select(-Trait) %>%
-      separate(Marker, sep = mod$sepy, into = c("Trait", "Marker"))
-  }
-  ggplot(res, aes(x = Lambda, y= value, color = Trait)) + geom_line() + scale_x_log10()
-}

@@ -18,7 +18,7 @@
 #'matplot(mod$lambda ,t(mod$beta),type='l',col=colors)
 #'#' @import R6 Matrix gglasso tidyverse glmnet stabs magrittr viridis stringr FusedLasso
 #' @export
-mod_lasso <- R6Class("mod_lasso",
+mod_lasso <- R6::R6Class("mod_lasso",
   inherit = VariSel,
   public = list(
     penalty.factor = NULL,
@@ -35,7 +35,7 @@ mod_lasso <- R6Class("mod_lasso",
       }
     },
 
-    estime = function(lambda = NULL, standardize = FALSE, intercept = FALSE){
+    estime = function(lambda = NULL, standardize = FALSE, intercept = TRUE){
       if(!is.null(lambda)){
         self$mod <-  private$tb %>%
           mutate( Lambda = lambda,
@@ -98,5 +98,24 @@ mod_lasso <- R6Class("mod_lasso",
                t
              })
       )
+  },
+  plot_path = function( type ="first", nb = 6){
+    if(is.null(self$coef)) self$get_coef()
+    res <- self$coef %>%
+      mutate(ret  =  paste(Marker,  Trait, sep =" on "))
+
+    sel <- res %>%  pull(ret) %>%
+      unique()
+    sel <- sel[1:nb]
+    res_sel <- res %>% filter(ret %in% sel) %>%
+      mutate(col = factor(ret, levels = unique(ret)))
+    res_other <- res %>% filter(!ret %in% sel)
+    ggplot(data = res_other,aes(x = Lambda, y = value, group = ret))+
+      geom_line(color = "lightgray") +
+      geom_line(data = res_sel,aes(color =col)) +
+      scale_x_log10() +
+      labs ( color = " ", y = "value of the coefficients", title = "Regularization Path", x = "Lambda")
+
+
   }
 ))

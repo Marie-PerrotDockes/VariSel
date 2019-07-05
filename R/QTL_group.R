@@ -18,7 +18,7 @@
 #'matplot(mod$lambda ,t(mod$beta),type='l',col=colors)
 #'#' @import R6 Matrix gglasso tidyverse glmnet stabs magrittr viridis stringr
 #' @export
-mod_group <- R6Class("mod_group",
+mod_group <- R6::R6Class("mod_group",
   inherit = VariSel,
   public = list(
     group = NULL,
@@ -81,30 +81,39 @@ mod_group <- R6Class("mod_group",
           t
         })
     )
+  },
+    get_coef = function(){
+    super$get_coef()
+    self$coef <- self$coef %>%
+      separate(Marker, sep =self$sepx, into = c ("Reg", "group"))
   }
 ))
 
 #' Description of the function
 #'
 #' @export
-mod_group_univ <- R6Class("mod_group_univ", inherit = mod_group,
+mod_group_univ <- R6::R6Class("mod_group_univ", inherit = mod_group,
   private = list(r = NULL),
   public = list(
-    initialize = function(x, y, sep = "\\."){
-      super$initialize(x, y)
-      self$group <- get_group(private$name_x, sep = sep)
+    initialize = function(x, y,
+                          Sigma_12inv = diag(1, ncol(as.data.frame(y))),
+                          sepx = "\\."){
+      super$initialize(x, y,Sigma_12inv = Sigma_12inv, sepx = sepx)
+      self$group <- get_group(private$name_x, sep = sepx)
     }
 ))
 
 #' Description of the function
 #' @export
-mod_group_multi <- R6Class("mod_group_multi", inherit = mod_group,
+mod_group_multi <- R6::R6Class("mod_group_multi", inherit = mod_group,
   private = list(r = NULL),
   public = list(
     initialize = function(x, y,
                   Sigma_12inv = diag(1, ncol(as.data.frame(y))),
-                  univ = FALSE){
-      super$initialize(x, y, univ = univ, Sigma_12inv = Sigma_12inv)
+                  univ = FALSE, sepx ="\\." ){
+      super$initialize(x, y, univ = univ,
+                       Sigma_12inv = Sigma_12inv,
+                       sepx = sepx)
     },
     sel_cv = function(s = "lambda.min"){
       super$sel_cv(s = s)
@@ -119,27 +128,29 @@ mod_group_multi <- R6Class("mod_group_multi", inherit = mod_group,
 #' Description of the function
 #'
 #' @export
-mod_group_multi_both <- R6Class("mod_group_multi_both",
+mod_group_multi_both <- R6::R6Class("mod_group_multi_both",
   inherit = mod_group_multi,
   public = list(
     initialize = function(x, y, univ = FALSE,
-                  Sigma_12inv = diag(1, ncol(as.data.frame(y))), sep =  "\\."){
+                  Sigma_12inv = diag(1, ncol(as.data.frame(y))), sepx =  "\\."){
       super$initialize(x, y, univ = FALSE,
-        Sigma_12inv = diag(1, ncol(as.data.frame(y))))
-      self$group <- get_group_both(private$name_x, sep = sep, r = private$r)
+        Sigma_12inv = diag(1, ncol(as.data.frame(y))),
+        sepx = sepx)
+      self$group <- get_group_both(private$name_x, sep = sepx, r = private$r)
     }
   ))
 
 #' Description of the function
 #'
 #' @export
-mod_group_multi_marker <- R6Class("mod_group_multi_marker",
+mod_group_multi_regr <- R6::R6Class("mod_group_multi_regr",
   inherit = mod_group_multi,
   public = list(
     initialize = function(x, y, univ = FALSE,
-                  Sigma_12inv = diag(1, ncol(as.data.frame(y))), sep = sep){
+                  Sigma_12inv = diag(1, ncol(as.data.frame(y))), sepx = "\\."){
       super$initialize(x, y, univ = FALSE,
-        Sigma_12inv = diag(1, ncol(as.data.frame(y))))
-      self$group <- get_group_marker(private$name_x, sep = sep, r = private$r)
+        Sigma_12inv = diag(1, ncol(as.data.frame(y))),
+        sepx = sepx)
+      self$group <- get_group_marker(private$name_x, sep = sepx, r = private$r)
     }
 ))

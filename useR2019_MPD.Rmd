@@ -1,8 +1,8 @@
 ---
-title: "VariSel: An R package to perform variable selection in multivariate linear model"
-subtitle: "Or how a Gallic village stay irreductible"
-author: "Marie Perrot-Dockès, Julien Chiquet, Laure Sansonnet"
-date: "20 juin 2019"
+title: "VariSel: An R package to perform variable selection in the multivariate linear model"
+subtitle: "Or how a Gallic village stays irreductible"
+author: "Marie Perrot-Dockès, Julien Chiquet"
+date: "UseR2019"
 output: 
   beamer_presentation :
     theme: "Rochester"
@@ -17,11 +17,15 @@ header-includes:
 - \newcommand{\bS}{\boldsymbol{S}}
 - \usetikzlibrary{arrows, decorations.markings}
 - \usepackage{arydshln}
+- \usepackage{url}
 - \definecolor{outcome}{RGB}{165,77,106}
+- \definecolor{dc}{RGB}{173,220,153}
+- \definecolor{lt}{RGB}{153,173,220}
+- \titlegraphic{\includegraphics[width=2.5cm]{logo_apt}\hspace*{4.75cm}~\includegraphics[width=2cm]{logo_inra}}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(dev = "cairo_pdf", message = 'hide', warning = FALSE)
+knitr::opts_chunk$set(dev = "cairo_pdf", message = 'hide', warning = FALSE, cache = TRUE)
 library(VariSel)
 library(tidyverse)
 library(extrafont)
@@ -39,8 +43,8 @@ scale_colour_discrete <- function(...)scale_color_uchicago()
 scale_fill_discrete <- function(...)scale_fill_uchicago()
 ```
 
-# A simlpe vision of the immune system :
-\framesubtitle{Or how Astérix and Obélix can kick-off the romans}
+# A simple vision of the immune system :
+\framesubtitle{Or how Astérix and Obélix can kick-off the Romans}
  
 
 ```{tikz, tikz-ex2, fig.cap = "DC Th dialogue", fig.ext = 'pdf', echo =FALSE}
@@ -51,9 +55,10 @@ scale_fill_discrete <- function(...)scale_fill_uchicago()
 \definecolor{i1}{RGB}{122,181,168}
 \definecolor{i2}{RGB}{122,165,181}
 \definecolor{i3}{RGB}{122,181,139}
-\definecolor{dc}{RGB}{206,184,181}
+\definecolor{dc}{RGB}{173,220,153}
 \definecolor{dc2}{RGB}{123, 87, 229}
-\definecolor{lt}{RGB}{181,203,206}
+\definecolor{lt}{RGB}{153,173,220}
+\definecolor{pert}{RGB}{220,153,173}
 \tikzstyle{line} = [draw, -latex, color = marron, line width=1pt]
 \tikzstyle{block} = [rectangle, draw, fill=vert!20, draw= vert!80, text = marronfonce,
 text width=3.5em, text centered, rounded corners, minimum height=2em,line width=1pt]
@@ -64,15 +69,19 @@ text width=4.4em, text centered, rounded corners, minimum height=1em,line width=
   \begin{tikzpicture}[node distance = 2cm, auto]
     % nodes
      \node(DC){\includegraphics[width= 0.22\textwidth]{cellule_dend}}; 
-      \node[left of = DC, node distance = 3 cm,  color = gray](Pert){\includegraphics[width= 0.17\textwidth]{romain.png}}; 
+      \node[left of = DC, node distance = 3 cm,  color = pert](Pert){\includegraphics[width= 0.17\textwidth]{romain.png}}; 
        \node[right of = DC, node distance = 4 cm](TL){\includegraphics[width= 0.17\textwidth]{ast_ob}}; 
        \node[right of = TL, node distance = 3 cm](L){\includegraphics[width= 0.17\textwidth]{paf-asterix}};
-        \node[below of = DC, node distance =2.2 cm,text width= 0.17\textwidth,text centered,color =dc!60!black]{ Dendritic cell};
- \node[below of = Pert, node distance =2.2 cm,text width= 0.22\textwidth,text centered,color =dc!60!black]{ Perturbators};
-      \node[below of = TL, node distance =2.2 cm,text width= 0.22\textwidth, text centered,color =lt!60!black]{ Naive Th lymphocytes};
-      \node[above of = TL, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 1.2 cm, color =lt!70!black]{ Th signals};
-      \node[above of =DC, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 2 cm, color =dc!70!black]{ DC signals};
-    
+        \node[below of = DC, node distance =2.2 cm,text width= 0.17\textwidth,text centered,color =dc!70!black]{ Dendritic cells};
+ \node[below of = Pert, node distance =2.2 cm,text width= 0.22\textwidth,text centered,color =pert!70!black]{ Perturbators};
+      \node[below of = TL, node distance =2.2 cm,text width= 0.22\textwidth, text centered,color =lt!70!black]{  \;\;\;\; Th \;\; \;\; lymphocytes};
+      \node[above of = TL, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 1.2 cm, color =lt!90!black]{ Th responses};
+      \node[above of =DC, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 2 cm, color =dc!90!black]{ DC signals};
+
+
+
+
+
        \path [line,color = dc] ([yshift=-0.8 cm,xshift=- 0.1 cm]DC.east) -- ([yshift=-0.8 cm]TL.west);
         \path [line,color = dc] ([yshift=-0.4 cm,xshift=- 0.1 cm]DC.east) -- ([yshift=-0.4 cm]TL.west);
          \path [line,color = dc] ([xshift=- 0.1 cm]DC.east) --  (TL.west);
@@ -91,6 +100,13 @@ text width=4.4em, text centered, rounded corners, minimum height=1em,line width=
 
 
 ```
+
+\tiny{ Grandclaudon, M., Perrot-Dockès, M, Trichot, C et al. \textit{ A Quantitative Multivariate Model of Human Dendritic Cell-T Helper Cell Communication (March 15, 2019)}. Available at \url{http://dx.doi.org/10.2139/ssrn.3353217} }
+<!--   \node[below of = DC, node distance =3.2 cm,text width= 0.17\textwidth,text centered,color =dc!70!black]{Sentinnelles};    -->
+<!--  \node[below of = Pert, node distance =3.2 cm,text width= 0.22\textwidth,text centered,color =pert!70!black]{ Perturbation}; -->
+<!--       \node[below of = TL, node distance =3.2 cm,text width= 0.22\textwidth, text centered,color =lt!70!black]{ Warriors}; -->
+<!--       \node[below of = TL, node distance =3.2 cm,text width= 0.15\textwidth, text centered, xshift = 1.2 cm, color =lt!90!black]{Actions}; -->
+<!--       \node[above of =DC, node distance =3.2 cm,text width= 0.15\textwidth, text centered, xshift = 2 cm, color =dc!90!black]{Warnings}; -->
 
 # Experimental set up :
 \framesubtitle{Ordralphabetix and Cétautomatix are two!}
@@ -104,9 +120,10 @@ text width=4.4em, text centered, rounded corners, minimum height=1em,line width=
 \definecolor{i1}{RGB}{122,181,168}
 \definecolor{i2}{RGB}{122,165,181}
 \definecolor{i3}{RGB}{122,181,139}
-\definecolor{dc}{RGB}{206,184,181}
+\definecolor{dc}{RGB}{173,220,153}
 \definecolor{dc2}{RGB}{123, 87, 229}
-\definecolor{lt}{RGB}{181,203,206}
+\definecolor{lt}{RGB}{153,173,220}
+\definecolor{pert}{RGB}{220,153,173}
 \tikzstyle{line} = [draw, -latex, color = marron, line width=1pt]
 \tikzstyle{block} = [rectangle, draw, fill=vert!20, draw= vert!80, text = marronfonce,
 text width=3.5em, text centered, rounded corners, minimum height=2em,line width=1pt]
@@ -115,17 +132,20 @@ text width=3em, text centered, rounded corners, minimum height=1.1em,line width=
 \tikzstyle{inp} = [rectangle, draw,  text = marronfonce,
 text width=4.4em, text centered, rounded corners, minimum height=1em,line width=1pt]
   \begin{tikzpicture}[node distance = 2cm, auto]
-    % nodes
-     \node(DC){\includegraphics[width= 0.19\textwidth]{cellule_dend1}}; 
-      \node[left of = DC, node distance = 3 cm,  color = gray](Pert){\includegraphics[width= 0.19\textwidth]{romain.png}}; 
+      \node(DC){\includegraphics[width= 0.19\textwidth]{cellule_dend1}}; 
+      \node[left of = DC, node distance = 3 cm,  color = pert](Pert){\includegraphics[width= 0.17\textwidth]{romain.png}}; 
        \node[right of = DC, node distance = 4 cm](TL){\includegraphics[width= 0.17\textwidth]{ast_ob}}; 
        \node[right of = TL, node distance = 3 cm](L){\includegraphics[width= 0.17\textwidth]{paf-asterix}};
-        \node[below of = DC, node distance =2.2 cm,text width= 0.17\textwidth,text centered,color =dc!60!black]{Ordra };
- \node[below of = Pert, node distance =2.2 cm,text width= 0.22\textwidth,text centered,color =dc!60!black]{ Perturbators};
-      \node[below of = TL, node distance =2.2 cm,text width= 0.22\textwidth, text centered,color =lt!60!black]{ Naive Th lymphocytes};
-      \node[above of = TL, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 1.2 cm, color =lt!70!black]{ Th signals};
-      \node[above of =DC, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 2 cm, color =dc!70!black]{ DC signals};
-    
+        \node[below of = DC, node distance =2.2 cm,text width= 0.17\textwidth,text centered,color =dc!70!black]{ \textbf{Ordra}};
+ \node[below of = Pert, node distance =2.2 cm,text width= 0.22\textwidth,text centered,color =pert!70!black]{ Perturbators};
+      \node[below of = TL, node distance =2.2 cm,text width= 0.22\textwidth, text centered,color =lt!70!black]{  \;\;\;\; Th \;\; \;\; lymphocytes};
+      \node[above of = TL, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 1.2 cm, color =lt!90!black]{ Th responses};
+      \node[above of =DC, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 2 cm, color =dc!90!black]{ DC signals};
+
+
+
+
+
        \path [line,color = dc] ([yshift=-0.8 cm,xshift=- 0.1 cm]DC.east) -- ([yshift=-0.8 cm]TL.west);
         \path [line,color = dc] ([yshift=-0.4 cm,xshift=- 0.1 cm]DC.east) -- ([yshift=-0.4 cm]TL.west);
          \path [line,color = dc] ([xshift=- 0.1 cm]DC.east) --  (TL.west);
@@ -142,17 +162,20 @@ text width=4.4em, text centered, rounded corners, minimum height=1em,line width=
         \end{tikzpicture}
 
   \begin{tikzpicture}[node distance = 2cm, auto]
-    % nodes
      \node(DC){\includegraphics[width= 0.19\textwidth]{cellule_dend2}}; 
-      \node[left of = DC, node distance = 3 cm,  color = gray](Pert){\includegraphics[width= 0.19\textwidth]{romain.png}}; 
+      \node[left of = DC, node distance = 3 cm,  color = pert](Pert){\includegraphics[width= 0.17\textwidth]{romain.png}}; 
        \node[right of = DC, node distance = 4 cm](TL){\includegraphics[width= 0.17\textwidth]{ast_ob}}; 
        \node[right of = TL, node distance = 3 cm](L){\includegraphics[width= 0.17\textwidth]{paf-asterix}};
-        \node[below of = DC, node distance =2.2 cm,text width= 0.17\textwidth,text centered,color =dc!60!black]{ Cetau};
- \node[below of = Pert, node distance =2.2 cm,text width= 0.22\textwidth,text centered,color =dc!60!black]{ Perturbators};
-      \node[below of = TL, node distance =2.2 cm,text width= 0.22\textwidth, text centered,color =lt!60!black]{ Naive Th lymphocytes};
-      \node[above of = TL, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 1.2 cm, color =lt!70!black]{ Th signals};
-      \node[above of =DC, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 2 cm, color =dc!70!black]{ DC signals};
-    
+        \node[below of = DC, node distance =2.2 cm,text width= 0.17\textwidth,text centered,color =dc!70!black]{ \textbf{Cetau}};
+ \node[below of = Pert, node distance =2.2 cm,text width= 0.22\textwidth,text centered,color =pert!70!black]{ Perturbators};
+      \node[below of = TL, node distance =2.2 cm,text width= 0.22\textwidth, text centered,color =lt!70!black]{  \;\;\;\; Th \;\; \;\; lymphocytes};
+      \node[above of = TL, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 1.2 cm, color =lt!90!black]{ Th responses};
+      \node[above of =DC, node distance =1.5 cm,text width= 0.15\textwidth, text centered, xshift = 2 cm, color =dc!90!black]{ DC signals};
+
+
+
+
+
        \path [line,color = dc] ([yshift=-0.8 cm,xshift=- 0.1 cm]DC.east) -- ([yshift=-0.8 cm]TL.west);
         \path [line,color = dc] ([yshift=-0.4 cm,xshift=- 0.1 cm]DC.east) -- ([yshift=-0.4 cm]TL.west);
          \path [line,color = dc] ([xshift=- 0.1 cm]DC.east) --  (TL.west);
@@ -172,14 +195,14 @@ text width=4.4em, text centered, rounded corners, minimum height=1em,line width=
 
 
 # Statistical modelling 
-\framesubtitle{Understand the gallic language}
+\framesubtitle{Understand the Gallic language}
  
 \begin{itemize}
 \item \textbf{Dataset description:}
 
 \begin{itemize}
-\item $\boldsymbol{X}$:  $n\times p$ design matrix \includegraphics[width =0.12\textwidth]{cellule_dend}
-\item $\boldsymbol{Y}$:  $n\times q$  response matrix \includegraphics[width =0.12\textwidth]{ast_ob}
+\item \textcolor{dc!70!black}{$\boldsymbol{X}$}:  $n\times p$ design matrix : the DC signals \includegraphics[width =0.12\textwidth]{cellule_dend}
+\item \textcolor{lt!70!black}{$\boldsymbol{Y}$}:  $n\times q$  response matrix : the Th responses  \includegraphics[width =0.12\textwidth]{ast_ob}
 \end{itemize}
 
 \item \textbf{Question:} Which variables influence the responses?
@@ -200,15 +223,16 @@ where  \begin{itemize}
 \end{itemize}
 
 
+
 # Statistical modelling 
-\framesubtitle{Understand the gallic language}
+\framesubtitle{Understand the Gallic language}
  
 \begin{itemize}
 \item \textbf{Dataset description:}
 
 \begin{itemize}
-\item $\boldsymbol{X}$:  $n\times p$ design matrix \includegraphics[width =0.12\textwidth]{cellule_dend}
-\item $\boldsymbol{Y}$:  $n\times q$  response matrix \includegraphics[width =0.12\textwidth]{ast_ob}
+\item \textcolor{dc!70!black}{$\boldsymbol{X}$}:  $n\times p$ design matrix : the DC signals \includegraphics[width =0.12\textwidth]{cellule_dend}
+\item \textcolor{lt!70!black}{$\boldsymbol{Y}$}:  $n\times q$  response matrix : the Th responses  \includegraphics[width =0.12\textwidth]{ast_ob}
 \end{itemize}
 
 \item \textbf{Question:} Which variables influence the responses?
@@ -229,45 +253,7 @@ where  \begin{itemize}
 \end{itemize}
 
 
-# Statistical modelling 
-
-\begin{table}
-\centering
-\begin{tabular}{l:c:rrr}
-  \hline
- & \textcolor{outcome}{\textbf{dc}} & \multicolumn{3}{c}{\textcolor{outcome}{\textbf{DC\_sign}}} \\
-  \hline
- &  & IL12p70 & TNFa & IL10 \\
-  \hline
-1 & Ordra & 32.11 & 859.27 & 10.1 \\
-  2 & Ordra & 10.20 & 661.92 & 8.40 \\
-  \vdots & \vdots & \vdots & \vdots & \vdots \\
-  428 & Cétau & 9.90 & 711.26 & 22.54 \\
-   \hline
-\end{tabular}
-\end{table}
-\vspace{-0.5cm}
-$$\Downarrow$$
-
-\vspace{-0.5cm}
-\begin{table}
-\centering
-\begin{tabular}{l:rrrrrr}
-  \hline
-& \multicolumn{6}{c}{\textcolor{outcome}{\textbf{X}}} \\
-  \hline
- & IL12p70 & TNFa & IL10  & IL12p70 & TNFa  & IL10  \\
-  &  in Ordra & in Ordra & in Ordra  & in Cétau & in Cétau & in Cétau \\
-  \hline
-1 &  32.11 & 859.27 & 10.1 &  0 & 0 & 0  \\
-  2 & 10.20 & 661.92 & 8.40 &  0 & 0 & 0  \\
-  \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots  \\
-  428 &  0 & 0 & 0 &  9.90 & 711.26 & 22.54 \\
-   \hline
-\end{tabular}
-\end{table}
-
-# Differents penalties : for differents point of view
+# Differents penalties : for different point of view
 
 \begin{itemize}
 \item \textcolor{outcome}{\textbf{Lasso}} : \textit{select variables without taking into account  potential links.}
@@ -276,7 +262,7 @@ $$\Downarrow$$
 \end{equation*}
 \item \textcolor{outcome}{\textbf{Group-Lasso}}  : \textit{select a group of variables.}
 \begin{equation*} \label{grouplasso}
-	\widehat{b}_G = \Am_{b_1, \dots, b_L} \left\lbrace||y-\sum_{1 \leq l \leq L}\bX_{(l)} b_{(l)}||_2^2 + \lambda\sum_{1 \leq l \leq L}\sqrt{p_l} ||b_l||_2\right\rbrace,
+	\widehat{b}_G = \Am_{b_1, \dots, b_L} \left\lbrace||y-\sum_{1 \leq \ell \leq L}\bX_{(\ell)} b_{(\ell)}||_2^2 + \lambda\sum_{1 \leq \ell \leq L}\sqrt{p_\ell} ||b_\ell||_2\right\rbrace,
 \end{equation*}
 \item \textcolor{outcome}{\textbf{Fused-Lasso}} :  \textit{influence a group of variables to have the same coefficient.}
 \begin{equation*}\label{fuselasso}
@@ -284,7 +270,7 @@ $$\Downarrow$$
 \end{equation*}
 \end{itemize}
 
-# Differents penalties : for differents point of view
+# Differents penalties : for different point of view
 
 \begin{itemize}
 \item \textcolor{outcome}{\textbf{Lasso}} : \textit{select variables without taking into account  potential links.}
@@ -293,7 +279,7 @@ $$\Downarrow$$
 \end{equation*}
 \item \textcolor{outcome}{\textbf{Group-Lasso}}  : \textit{select a group of variables.}
 \begin{equation*} \label{grouplasso}
-	\widehat{b}_G = \Am_{b_1, \dots, b_L} \left\lbrace||y-\sum_{1 \leq l \leq L}\bX_{(l)} b_{(l)}||_2^2 + \lambda\sum_{1 \leq l \leq L}\sqrt{p_l} ||b_l||_2\right\rbrace,
+	\widehat{b}_G = \Am_{b_1, \dots, b_L} \left\lbrace||y-\sum_{1 \leq \ell \leq L}\bX_{(\ell)} b_{(\ell)}||_2^2 + \lambda\sum_{1 \leq \ell \leq L}\sqrt{p_\ell} ||b_\ell||_2\right\rbrace,
 \end{equation*}
 \item \textcolor{outcome}{\textbf{Fused-Lasso}} :  \textit{influence a group of variables to have the same coefficient.}
 \begin{equation*}\label{fuselasso}
@@ -302,12 +288,50 @@ $$\Downarrow$$
 \end{itemize}
 
 
+
+
+
+<!-- # Statistical modelling  -->
+
+<!-- \begin{table} -->
+<!-- \centering -->
+<!-- \begin{tabular}{l:c:rrr} -->
+<!--   \hline -->
+<!--  & \textcolor{outcome}{\textbf{dc}} & \multicolumn{3}{c}{\textcolor{outcome}{\textbf{DC\_sign}}} \\ -->
+<!--   \hline -->
+<!--  &  & IL12p70 & TNFa & IL10 \\ -->
+<!--   \hline -->
+<!-- 1 & Ordra & 32.11 & 859.27 & 10.1 \\ -->
+<!--   2 & Ordra & 10.20 & 661.92 & 8.40 \\ -->
+<!--   \vdots & \vdots & \vdots & \vdots & \vdots \\ -->
+<!--   428 & Cétau & 9.90 & 711.26 & 22.54 \\ -->
+<!--    \hline -->
+<!-- \end{tabular} -->
+<!-- \end{table} -->
+<!-- \vspace{-0.5cm} -->
+<!-- $$\Downarrow$$ -->
+
+<!-- \vspace{-0.5cm} -->
+<!-- \begin{table} -->
+<!-- \centering -->
+<!-- \begin{tabular}{l:rrrrrr} -->
+<!--   \hline -->
+<!-- & \multicolumn{6}{c}{\textcolor{outcome}{\textbf{X}}} \\ -->
+<!--   \hline -->
+<!--  & IL12p70 & TNFa & IL10  & IL12p70 & TNFa  & IL10  \\ -->
+<!--   &  in Ordra & in Ordra & in Ordra  & in Cétau & in Cétau & in Cétau \\ -->
+<!--   \hline -->
+<!-- 1 &  32.11 & 859.27 & 10.1 &  0 & 0 & 0  \\ -->
+<!--   2 & 10.20 & 661.92 & 8.40 &  0 & 0 & 0  \\ -->
+<!--   \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots  \\ -->
+<!--   428 &  0 & 0 & 0 &  9.90 & 711.26 & 22.54 \\ -->
+<!--    \hline -->
+<!-- \end{tabular} -->
+<!-- \end{table} -->
 
 
 
 #  VariSel for one model type 
-
-
 ```{r, include=FALSE}
 set.seed(4)
 load("raw_data.RData")
@@ -324,32 +348,35 @@ X <- Xbrt %>% as.data.frame() %>%
 #   summarize_if(is.numeric, mean) %>% 
 #   ungroup() %>% as.data.frame()
  DC_sign <- X_bxcx[,c(36,37, 40)]
- T_sign <- Y_bxcx[,c(2,10)]
+ T_resp <- Y_bxcx[,c(2,10)]
 # DC_sign <- X %>% select(-dc,-pert_dc) %>%
 #   as.matrix() %>% scale()
 # 
-# T_sign <- Y %>% select(IFNg,  IL3) %>%
+# T_resp <- Y %>% select(IFNg,  IL3) %>%
 #   as.matrix() %>% scale()
 # dc <- Y %>% pull(dc)
- dc[dc == " bDC"] <- "Ordra"
-dc[dc == " bDC"] <- "Cetau"
-```
-
-```{r, eval=FALSE}
-X <-  model.matrix(~DC_sign:dc -1)
-mod <-  train_VariSel( Y = T_sign, 
-                       X = X, 
-                       sepx = ":", 
-                       type ="group_multi_regr",
-                       type_S12_inv= "emp")
+ dc <- as.character(dc)
+ dc[dc == "bDC "] <- "Ordra"
+dc[dc == "MoDC"] <- "Cetau"
 ```
 
 ```{r}
-mod <-  train_VariSel( Y = T_sign,
+mod <-  train_VariSel( Y = T_resp,
                        regressors = DC_sign, 
                        group = dc, 
                        type ="group_multi_regr") 
 ```
+
+
+```{r, eval=FALSE}
+X <-  model.matrix(~DC_sign:dc -1)
+mod <-  train_VariSel( Y = T_resp, 
+                       X = X, 
+                       sepx = ":", 
+                       type ="group_multi_regr")
+```
+
+
 
 
 <!-- Different parameters :  -->
@@ -368,48 +395,21 @@ mod <-  train_VariSel( Y = T_sign,
 #  VariSel for one model type 
 
 
-```{r, include=FALSE}
-set.seed(4)
-load("raw_data.RData")
-load("data_Tmod_sspdc.RData")
-# X <- X_bxcx %>% as.data.frame() %>% 
-#   mutate(pert_dc= pert_dc, dc= dc) %>% 
-#   group_by(pert_dc, dc) %>% 
-#   summarize_if(is.numeric, mean) %>% ungroup()  %>% 
-#   as.data.frame()
-# 
-# Y <- Y_bxcx %>% as.data.frame() %>% 
-#   mutate(pert_dc= pert_dc, dc= dc) %>% 
-#   group_by(pert_dc, dc) %>% 
-#   summarize_if(is.numeric, mean) %>% 
-#   ungroup() %>% as.data.frame()
- DC_sign <- X_bxcx[,c(36,37, 40)]
- T_sign <- Y_bxcx[,c(2,10)]
-# DC_sign <- X %>% select(-dc,-pert_dc) %>%
-#   as.matrix() %>% scale()
-# 
-# T_sign <- Y %>% select(IFNg,  IL3) %>%
-#   as.matrix() %>% scale()
-# dc <- Y %>% pull(dc)
- dc <- as.character(dc)
-dc[dc == " bDC"] <- "Ordra"
-dc[dc == " bDC"] <- "Cetau"
-```
 
-```{r, eval=FALSE}
-X <-  model.matrix(~DC_sign:dc -1)
-mod <-  train_VariSel( Y = T_sign, 
-                       X = X, 
-                       sepx = ":", 
-                       type ="group_multi_regr",
-                       type_S12_inv= "emp")
-```
-
-```{r, eval = FALSE}
-mod <-  train_VariSel( Y = T_sign,
+```{r}
+mod <-  train_VariSel( Y = T_resp,
                        regressors = DC_sign, 
                        group = dc, 
                        type ="group_multi_regr") 
+```
+
+
+```{r, eval=FALSE}
+X <-  model.matrix(~DC_sign:dc -1)
+mod <-  train_VariSel( Y = T_resp, 
+                       X = X, 
+                       sepx = ":", 
+                       type ="group_multi_regr")
 ```
 
 #  VariSel for one model type : Outcome 
@@ -418,23 +418,29 @@ mod <-  train_VariSel( Y = T_sign,
 plot(mod)
 ```
 
-# Comparison of different modelling strategy 
+# Different modelling strategy 
+
+
 
 ```{r, echo=FALSE}
 col <- pal_uchicago()(6)
-m2 <-  train_VariSel( Y = T_sign,
+mod <-  train_VariSel( Y = T_resp,
+                       regressors = DC_sign, 
+                       group = dc, 
+                       type ="group_multi_regr") 
+m2 <-  train_VariSel( Y = T_resp,
                        regressors = DC_sign, 
                        group = dc, 
                        type ="group_multi_both")
-m3 <-  train_VariSel( Y = T_sign,
+m3 <-  train_VariSel( Y = T_resp,
                        regressors = DC_sign, 
                        group = dc, 
                        type ="fused_multi_both")
-m4 <-  train_VariSel( Y = T_sign,
+m4 <-  train_VariSel( Y = T_resp,
                        regressors = DC_sign, 
                        group = dc, 
                        type ="fused_multi_regr")
-m5 <-   train_VariSel( Y = T_sign,
+m5 <-   train_VariSel( Y = T_resp,
                        regressors = DC_sign, 
                        group = dc, 
                        type ="lasso_multi")
@@ -445,11 +451,41 @@ m5 <-   train_VariSel( Y = T_sign,
 compar_path(mods = list(mod,m2,m3,m4))
 ```
 
+# Different modelling strategy 
+
+```{r, echo=FALSE}
+col <- pal_uchicago()(6)
+mod <-  train_VariSel( Y = T_resp,
+                       regressors = DC_sign, 
+                       group = dc, 
+                       type ="group_multi_regr") 
+m2 <-  train_VariSel( Y = T_resp,
+                       regressors = DC_sign, 
+                       group = dc, 
+                       type ="group_multi_both")
+m3 <-  train_VariSel( Y = T_resp,
+                       regressors = DC_sign, 
+                       group = dc, 
+                       type ="fused_multi_both")
+m4 <-  train_VariSel( Y = T_resp,
+                       regressors = DC_sign, 
+                       group = dc, 
+                       type ="fused_multi_regr")
+m5 <-   train_VariSel( Y = T_resp,
+                       regressors = DC_sign, 
+                       group = dc, 
+                       type ="lasso_multi")
+
+```
+
+```{r}
+compar_path(mods = list(mod,m2,m3,m4))
+```
 
 # Models selection 
 
 ```{r}
-ct <- compar_type( Y = T_sign, regressors = DC_sign,  
+ct <- compar_type( Y = T_resp, regressors = DC_sign,  
                    group = dc, 
  types = c("group_multi_regr" , "group_multi_both" ,
   "fused_multi_regr", "fused_multi_both",
@@ -462,9 +498,11 @@ plot_ct(ct) + labs(title ='')
 ```
 
 
+
+
 # Best models representation
 
-```{r}
+```{r, fig.height =5.5}
 bm <- get_best_models(ct,criterion = "MSE_boot")
 plot_md(bm)
 ```
@@ -478,7 +516,7 @@ It can
 \item Associate explicative variables 
 \item Associate responses 
 \item Associate both explicative  variables and responses 
-\item Let all variables 'free', without assoicaiting any of them
+\item Let all variables 'free', without assoiciating any of them
 \end{itemize}
 
 

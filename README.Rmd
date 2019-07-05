@@ -15,11 +15,11 @@ require(tidymodels)
 require(viridis)
 require(furrr)
 require(rlang)
+require(knitr)
 theme_set(theme_bw() + theme_light() +
             theme(strip.background = element_rect(fill = "white", color ="gray"), 
                   strip.text = element_text(color = "black"),
                   text = element_text(face="bold", family="LM Roman 10", size =18),
-                  legend.position = "bottom" , legend.key.width = unit(2.5,units = "cm"),
                   legend.key.height = unit(0.3,units = "cm"),
                   plot.title = element_text(hjust = 0.5, size =32),
                   panel.grid = element_blank()))
@@ -34,9 +34,216 @@ scale_colour_discrete <- function(...) scale_color_viridis(discrete = TRUE)
 ## Introduction 
 
 
-## Un exemple simple :
+## First exemples : Iris dataset
 
-Nous avons deux variables réponses, 5 regresseurs et un variable catégorielle à deux modalités. 
+```{r}
+lirbary(car)
+iris %>% 
+  head() %>% 
+  kable()
+```
+
+### Associtaion between sepal characteristics and petal characteristics
+
+The aim of this exemple is to select association between the Sepal (Length and width) and the Petal (Length and Width). 
+
+Construction of the matrices  :
+
+```{r}
+Y <- iris %>% select( starts_with("Sepal"))
+Petal_char <- iris %>% select( starts_with("Petal"))
+```
+
+Coefficient estimation using a lasso criterion: 
+
+
+```{r}
+mod <-  train_VariSel( Y = Y, 
+                       X = Petal_char, 
+                       type ="lasso_univ")
+```
+
+```{r}
+plot(mod)
+```
+
+It start by selecting an association between the petal length and the sepal length and then an association between the petal lenght and the sepal widthand so on..
+
+Let us now see what happened when we use group lasso to force the association to be between one sepal characteristics with all petal characteristics. 
+
+```{r}
+mod_group <-  train_VariSel( Y = Y, 
+                       X = Petal_char, 
+                       type ="group_multi_regr", 
+                       sepx = "\\.")
+```
+
+The argument ~sepx = "\\."~ mean that the name of X will be seperate into a group name and a characteristics name. 
+Two variables having the same group name will be selected together. Here both Petal.length and Petal.Width start with Petal hence they will be selected together. 
+
+```{r}
+plot(mod_group)
+```
+
+Let's now compare differents types grouping or not the petal characteristics and influence it or not to have the same coefficients. 
+
+```{r}
+ct <- compar_type( Y = Y, X = Petal_char,  
+  types = c("group_multi_regr" , "group_multi_both" ,
+  "fused_multi_regr", "fused_multi_both",
+  "lasso_multi", "lasso_univ" ), times = 10)
+plot_ct(ct)
+```
+
+We can also propose different associations between petal characteristics and sepal charcateristics depending on the species. 
+
+
+```{r}
+mod_group_species <-  train_VariSel( Y = Y, 
+                       regressors =  Petal_char, 
+                       group = iris$Species,
+                       type ="group_multi_regr")
+```
+
+```{r}
+plot(mod_group_species)
+```
+
+```{r, echo=FALSE}
+col <- pal_uchicago()(6)
+
+mod_group_resp_species <-  train_VariSel( Y = Y,
+                       regressors = Petal_char, 
+                       group = iris$Species, 
+                       type ="group_multi_both")
+
+mod_fused_multi_species <-  train_VariSel( Y = Y,
+                       regressors = Petal_char, 
+                       group = iris$Species, 
+                       type ="fused_multi_regr")
+mod_fused_multi_species_resp <-  train_VariSel( Y = Y,
+                       regressors = Petal_char, 
+                       group = iris$Species, 
+                       type ="fused_multi_both")
+
+
+```
+
+```{r}
+compar_path(mods = list(mod_group_species,
+                        mod_group_resp_species,
+                        mod_fused_multi_species,
+                        mod_fused_multi_species_resp))
+```
+
+
+```{r}
+mod_lasso <-   train_VariSel( Y = Y,
+                       regressors = Petal_char, 
+                       group = iris$Species, 
+                       type ="lasso_multi")
+```
+ 
+ 
+```{r}
+plot(mod_lasso)
+```
+ 
+
+## A more serious exemple 
+
+we will now use the dataset available and described in "A global dataset of CO2 emissions and ancillary data related to emissions for 343 cities"
+
+The data are available in https://www.nature.com/articles/sdata2018280?WT.feed_name=subjects_environmental-social-sciences
+
+```{r}
+CO2 <-xlsx::read.xlsx(file="Data/D_FINAL.xlsx", sheetIndex =1, header=TRUE)
+dim(CO2)
+cc <-complete.cases(CO2[,c("Scope.1.GHG.emissions..tCO2.or.tCO2.eq.",
+                      "Scope.2..CDP...tCO2.eq.",
+                      "Average.altitude..m.",
+                      "Average.annual.temperature..CDP...degrees.Celsius.")])
+CO2_full <- CO2[cc, ]
+CO2_quant <- CO2_full %>% select_if(is.numeric)
+CO2_quant_full <- CO2_quant[,complete.cases(t(CO2_quant))]
+```
+
+
+```{r}
+Y <- CO2_quant_full[,c("Scope.1.GHG.emissions..tCO2.or.tCO2.eq.",
+                      "Scope.2..CDP...tCO2.eq.")] %>% 
+  scale()
+CO2_quant_full_exp <-CO2_quant_full %>%
+  select(-Scope.1.GHG.emissions..tCO2.or.tCO2.eq.,
+    -Scope.2..CDP...tCO2.eq.,
+    -Total.emissions..CDP...tCO2.eq.) %>% scale()
+```
+
+
+First model : association between in different region 
+
+
+```{r}
+mod_lasso <- train_VariSel(Y = Y, 
+                           X = CO2_quant_full_exp,
+                           type = "lasso_multi")
+plot(mod_lasso)
+```
+
+
+```{r}
+mod_lasso_reg <- train_VariSel(Y = Y, 
+                           regressors = CO2_quant_full_exp,
+                           group = as.character(CO2_full$Region),
+                           type = "lasso_multi")
+plot(mod_lasso_reg)
+```
+
+
+
+```{r}
+mod_lasso_reg <- train_VariSel(Y = Y, 
+                           regressors = CO2_quant_full_exp,
+                           group = as.character(CO2_full$Region),
+                           type = "group_multi_regr")
+plot(mod_lasso_reg, n =8)
+```
+
+```{r}
+mod_lasso_reg <- train_VariSel(Y = Y, 
+                           regressors = CO2_quant_full_exp,
+                           group = as.character(CO2_full$Region),
+                           type = "group_multi_both")
+plot(mod_lasso_reg, n =6)
+```
+
+
+```{r}
+mod_lasso_reg <- train_VariSel(Y = Y, 
+                           regressors = CO2_quant_full_exp,
+                           group = as.character(CO2_full$Region),
+                           type = "fused_multi_both")
+plot(mod_lasso_reg, n =6)
+```
+
+
+
+```{r}
+plan(multiprocess)
+ct <- compar_type(Y = Y, 
+        regressors = CO2_quant_full_exp,
+        group = as.character(CO2_full$Region),
+        types = c("group_multi_regr" , "group_multi_both" ,
+          "fused_multi_regr", "fused_multi_both",
+          "lasso_multi", "lasso_univ" ))
+plot_ct(ct)
+
+bm <- get_best_models(ct)
+
+
+plot_md(bm)
+```
+
 
 ```{r}
 set.seed(123)

@@ -1,6 +1,6 @@
 #' Description of the function
 #' @export
-QTLmod_lasso_adaptive <- R6Class("QTLmod_lasso",
+QTLmod_lasso_adaptive <- R6::R6Class("QTLmod_lasso",
   inherit = QTLmod,
   public = list(
     initialize = function(x, y){

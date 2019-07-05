@@ -9,7 +9,7 @@
 #' @export
 #'
 #' @examples
-mod_fus2_univ <- R6Class("mod_fus2_univ",
+mod_fus2_univ <- R6::R6Class("mod_fus2_univ",
   inherit = mod_lasso,
   public = list(
     initialize = function(X, Y, group,  a = 1){
@@ -39,7 +39,7 @@ mod_fus2_univ <- R6Class("mod_fus2_univ",
 #' @export
 #'
 #' @examples
-mod_fus2_resp <- R6Class("mod_fus2_resp",
+mod_fus2_resp <- R6::R6Class("mod_fus2_resp",
  inherit = mod_lasso,
  public = list(
   initialize = function(X, Y, a = 1){
