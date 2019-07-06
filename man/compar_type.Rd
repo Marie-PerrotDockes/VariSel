@@ -4,8 +4,9 @@
 \alias{compar_type}
 \title{Title}
 \usage{
-compar_type(X, Y, types, Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
-  group = NULL, a = 1, times = 10, sep = "\\\\.")
+compar_type(X = NULL, Y, types, Sigma_12inv = NULL, group = NULL,
+  a = 1, times = 10, sep = "\\\\.", regressors = NULL,
+  type_S12_inv = "emp")
 }
 \arguments{
 \item{times}{}

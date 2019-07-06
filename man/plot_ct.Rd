@@ -4,7 +4,7 @@
 \alias{plot_ct}
 \title{Title}
 \usage{
-plot_ct(ct)
+plot_ct(ct, type = "MSE")
 }
 \arguments{
 \item{ct}{}

@@ -242,15 +242,15 @@ compar_type <- function(X = NULL, Y, types,
 #' @export
 #'
 #' @examples
-plot_ct <- function(ct, type ="MSE"){
-  if(type == "MSE"){
+plot_ct <- function(ct, criterion ="MSE"){
+  if(criterion == "MSE"){
     p <- ct$all_res %>% group_by(key, type) %>% filter(type!="fus2resp") %>%
     # summarise(MSE = mean(MSE_boot), BIC = mean(BIC), lambda1 = mean(lambda1)) %>%
     ggplot(aes(x = lambda1, color = type, fill = type, y = MSE_boot, shape = type)) +
     geom_smooth() + theme_bw() + scale_x_log10()+
     labs(y = "MSE", title ="Bootstrap MSE", x = "Regularization Path")
   }
-  if(type == "BIC"){
+  if(criterion == "BIC"){
     p <- ct$all_res %>% group_by(key, type) %>% filter(type!="fus2resp") %>%
       # summarise(MSE = mean(MSE_boot), BIC = mean(BIC), lambda1 = mean(lambda1)) %>%
       ggplot(aes(x = lambda1, color = type, fill = type, y = BIC, shape = type)) +
@@ -361,11 +361,25 @@ ct$all_res %>% group_by(key, Name, type) %>%
 #' @examples
 plot_md <- function(bmd, types =NULL){
   if(is.null(types)) types <- unique(bmd$type)
+
+  if (length(types) == 1){
+    dat <- bmd %>% filter(coef!=0 & type !="fus2resp" & type %in% types)
+    if(length(unique(dat$Marker)) > length(unique(dat$Trait))){
+        ggplot(dat, aes(y = Trait, x = Marker, fill =coef)) +
+        geom_tile() + theme(axis.text.x = element_text(angle =90))+
+       scale_fill_viridis()
+    }else{
+      ggplot(dat, aes(x = Trait, y = Marker, fill =coef)) +
+        geom_tile() + theme(axis.text.x = element_text(angle =90))+
+        scale_fill_viridis()
+      }
+  }else{
   bmd %>% filter(coef!=0 & type !="fus2resp" & type %in% types) %>%
     ggplot(aes(y = type, x = Marker, fill =coef)) +
     geom_tile() + theme(axis.text.x = element_text(angle =90))+
     facet_wrap(~Trait, scale = "free") +
     scale_fill_viridis()
+  }
 }
 
 

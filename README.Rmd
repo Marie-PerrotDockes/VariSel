@@ -16,13 +16,11 @@ require(viridis)
 require(furrr)
 require(rlang)
 require(knitr)
-theme_set(theme_bw() + theme_light() +
+theme_set(theme_bw() + 
             theme(strip.background = element_rect(fill = "white", color ="gray"), 
                   strip.text = element_text(color = "black"),
-                  text = element_text(face="bold", family="LM Roman 10", size =18),
-                  legend.key.height = unit(0.3,units = "cm"),
-                  plot.title = element_text(hjust = 0.5, size =32),
-                  panel.grid = element_blank()))
+                  text = element_text(face="bold", family="LM Roman 10"),
+                  plot.title = element_text(hjust = 0.5, size =32)))
 scale_fill_continuous <- function(...) scale_fill_viridis()
 scale_fill_discrete <- function(...) scale_fill_viridis(discrete = TRUE)
 scale_colour_discrete <- function(...) scale_color_viridis()
@@ -88,6 +86,7 @@ plot(mod_group)
 Let's now compare differents types grouping or not the petal characteristics and influence it or not to have the same coefficients. 
 
 ```{r}
+ plan(multiprocess)
 ct <- compar_type( Y = Y, X = Petal_char,  
   types = c("group_multi_regr" , "group_multi_both" ,
   "fused_multi_regr", "fused_multi_both",
@@ -173,6 +172,7 @@ CO2_quant_full <- CO2_quant[,complete.cases(t(CO2_quant))]
 Y <- CO2_quant_full[,c("Scope.1.GHG.emissions..tCO2.or.tCO2.eq.",
                       "Scope.2..CDP...tCO2.eq.")] %>% 
   scale()
+colnames(Y) <- c("Scope1", "Scope2")
 CO2_quant_full_exp <-CO2_quant_full %>%
   select(-Scope.1.GHG.emissions..tCO2.or.tCO2.eq.,
     -Scope.2..CDP...tCO2.eq.,
@@ -191,6 +191,13 @@ plot(mod_lasso)
 ```
 
 
+You can choose to change the number of color variable (the one we can see as selected)
+
+```{r}
+plot(mod_lasso, n=20)
+```
+
+
 ```{r}
 mod_lasso_reg <- train_VariSel(Y = Y, 
                            regressors = CO2_quant_full_exp,
@@ -202,11 +209,11 @@ plot(mod_lasso_reg)
 
 
 ```{r}
-mod_lasso_reg <- train_VariSel(Y = Y, 
+mod_group_multi_regr<- train_VariSel(Y = Y, 
                            regressors = CO2_quant_full_exp,
                            group = as.character(CO2_full$Region),
                            type = "group_multi_regr")
-plot(mod_lasso_reg, n =8)
+plot(mod_group_multi_regr, n =8)
 ```
 
 ```{r}
@@ -236,12 +243,12 @@ ct <- compar_type(Y = Y,
         types = c("group_multi_regr" , "group_multi_both" ,
           "fused_multi_regr", "fused_multi_both",
           "lasso_multi", "lasso_univ" ))
-plot_ct(ct)
+plot_ct(ct, criterion ="BIC")
 
-bm <- get_best_models(ct)
+bm <- get_best_models(ct, criterion ="MSE_boot")
 
 
-plot_md(bm)
+plot_md(bm, type = "group_multi_regr")
 ```
 
 

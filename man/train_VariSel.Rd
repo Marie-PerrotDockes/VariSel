@@ -4,8 +4,9 @@
 \alias{train_VariSel}
 \title{Title}
 \usage{
-train_VariSel(X, Y, type, sepx, reg, group, lambda = NULL,
-  lambda1 = NULL, lambda2 = NULL)
+train_VariSel(X = NULL, Y, type, sepx = NULL, regressors = NULL,
+  group = NULL, lambda = NULL, lambda1 = NULL, lambda2 = NULL,
+  Sigma_12inv = NULL, type_S12_inv = "fixed")
 }
 \arguments{
 \item{lambda2}{}
