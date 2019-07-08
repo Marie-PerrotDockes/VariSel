@@ -25,7 +25,8 @@ train_VariSel <- function(X = NULL, Y, type, sepx = NULL, regressors =NULL, grou
   if(!is.null(X) & !is.null(regressors)) stop("either regressors and group must be supplied or X (the design matirx already full)")
   if(!is.null(sepx) & !is.null(group)) stop("either sepx or group must be supplied see the help of the function")
   if (is.null(X)){
-    if(is.null(group) | is.null(regressors)) stop('Error if the design matrix X is not supplied both group and regressors must be')
+    if(is.null(group) & is.null(regressors)) stop('Error if the design matrix X is not supplied at least group or regressors must be')
+    if(is.null(regressors)) regressors <- matrix(1,nrow= length(group))
     if(!is.matrix(regressors)) regressors <- as.matrix(regressors)
     X <- model.matrix(~regressors:group -1)
     colnames(X) <- gsub('regressors', "", gsub("group", "", colnames(X)))
@@ -57,14 +58,23 @@ train_VariSel <- function(X = NULL, Y, type, sepx = NULL, regressors =NULL, grou
 #' @export
 #'
 #' @examples
-get_S12inv <- function(Y, X, type){
+get_S12inv <- function(Y, X, type, p = NULL, q = NULL){
 
   if(nrow(X) > ncol(X)){
     res <- lm(as.matrix(Y)~X -1)$residuals
   } else{
     res <- sapply(1:ncol(Y),function(i){Y[,i]-X%*%lm.ridge(as.matrix(Y[,i])~X -1)$coef})
   }
-  return(solve(chol(cor(res))))
+  if(type =="emp"){
+   S12_inv <-  solve(chol(cor(res)))
+  }
+  if (type =="Block"){
+    S12_inv<- Sigma_estimation(res, inv_12 = TRUE)$S_inv_12
+  }
+  if(! type %in% c("emp", "Block")){
+    S12_inv <-  whitening(res, type, p , q)
+  }
+  return(S12_inv)
 }
 
 # tuned_grid

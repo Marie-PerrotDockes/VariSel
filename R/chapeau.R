@@ -180,7 +180,9 @@ compar_type <- function(X = NULL, Y, types,
                  regressors = NULL,
                 type_S12_inv ="emp"){
   if (is.null(X)){
-    if(is.null(group) | is.null(regressors)) stop('Error if the design matrix X is not supplied both group and regressors must be')
+    if(is.null(group) & is.null(regressors)) stop('Error if the design matrix X is not supplied at least one of group or regressors must be')
+
+    if(is.null(regressors)) regressors <- matrix(1,nrow= length(group))
     if(!is.matrix(regressors)) regressors <- as.matrix(regressors)
     X <- model.matrix(~regressors:group -1)
     colnames(X) <- gsub('regressors', "", gsub("group", "", colnames(X)))

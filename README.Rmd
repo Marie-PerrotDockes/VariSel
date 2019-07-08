@@ -30,6 +30,58 @@ scale_colour_discrete <- function(...) scale_color_viridis(discrete = TRUE)
 ```
 
 ## Introduction 
+### Statistical modelling 
+\framesubtitle{Understand the Gallic language}
+ 
+\begin{itemize}
+\item \textbf{Dataset description:}
+
+\begin{itemize}
+\item \textcolor{dc!70!black}{$\boldsymbol{X}$}:  $n\times p$ design matrix 
+\item \textcolor{lt!70!black}{$\boldsymbol{Y}$}:  $n\times q$  response matrix 
+\end{itemize}
+
+\item \textbf{Question:} Which variables influence the responses?
+
+\item \textbf{Approach:}
+\begin{itemize}
+ \item Variable selection in 
+$$
+\boldsymbol{Y}=\boldsymbol{XB}+\boldsymbol{E},
+$$
+where  \begin{itemize}
+\item $\boldsymbol{B}$:   $p\times q$  \textbf{sparse} coefficients matrix
+\item $\boldsymbol{E}$: $n\times q$ error matrix  with $$\forall  i\in\{1,\dots, n\}, \; (E_{i,1},\dots,E_{i,q})\stackrel{iid}{\sim}~\mathcal{N}(0,\boldsymbol{\Sigma}_q)$$
+
+\end{itemize}
+\item We take the dependence into account by estimating $\boldsymbol{\Sigma}_q$. 
+\end{itemize}
+\end{itemize}
+
+
+### Differents penalties : for different point of view
+
+\begin{itemize}
+\item \textcolor{outcome}{\textbf{Lasso}} : \textit{select variables without taking into account  potential links.}
+\begin{equation*} \label{grouplasso}
+	\widehat{b}_L = \Am_{b} \left\lbrace||y-\bX b||_2^2 + \lambda ||b||_1 \right\rbrace,
+\end{equation*}
+\item \textcolor{outcome}{\textbf{Group-Lasso}}  : \textit{select a group of variables.}
+\begin{equation*} \label{grouplasso}
+	\widehat{b}_G = \Am_{b_1, \dots, b_L} \left\lbrace||y-\sum_{1 \leq \ell \leq L}\bX_{(\ell)} b_{(\ell)}||_2^2 + \lambda\sum_{1 \leq \ell \leq L}\sqrt{p_\ell} ||b_\ell||_2\right\rbrace,
+\end{equation*}
+\item \textcolor{outcome}{\textbf{Fused-Lasso}} :  \textit{influence a group of variables to have the same coefficient.}
+\begin{equation*}\label{fuselasso}
+	\widehat{b}_F =\Am_{b}||y-\bX b||_2^2 + \left\lbrace\lambda_1\sum_{(i,j) \in \mathcal{G}} |b_i - b_j|+ \lambda_2 ||b||_1\right\rbrace,
+\end{equation*}
+\end{itemize}
+
+
+## Package Installation 
+
+```{r}
+devtools::install_github("MariePerrotDockes/VariSel")
+```
 
 
 ## First exemples : Iris dataset
@@ -159,24 +211,28 @@ The data are available in https://www.nature.com/articles/sdata2018280?WT.feed_n
 CO2 <-xlsx::read.xlsx(file="Data/D_FINAL.xlsx", sheetIndex =1, header=TRUE)
 dim(CO2)
 cc <-complete.cases(CO2[,c("Scope.1.GHG.emissions..tCO2.or.tCO2.eq.",
-                      "Scope.2..CDP...tCO2.eq.",
-                      "Average.altitude..m.",
-                      "Average.annual.temperature..CDP...degrees.Celsius.")])
+                           "Total.emissions..CDP...tCO2.eq.",
+                           "Population..CDP.",
+                           "Average.annual.temperature..CDP...degrees.Celsius.",
+                           "Average.altitude..m.")])
 CO2_full <- CO2[cc, ]
 CO2_quant <- CO2_full %>% select_if(is.numeric)
 CO2_quant_full <- CO2_quant[,complete.cases(t(CO2_quant))]
+Region <- as.character(CO2_full$Region)
+Region[grepl('Asia', Region)] <- "Asia"
+kable(table(Region))
 ```
 
 
 ```{r}
 Y <- CO2_quant_full[,c("Scope.1.GHG.emissions..tCO2.or.tCO2.eq.",
-                      "Scope.2..CDP...tCO2.eq.")] %>% 
+                      "Total.emissions..CDP...tCO2.eq.")] %>% 
   scale()
-colnames(Y) <- c("Scope1", "Scope2")
+colnames(Y) <- c("Scope1", "Total")
 CO2_quant_full_exp <-CO2_quant_full %>%
   select(-Scope.1.GHG.emissions..tCO2.or.tCO2.eq.,
-    -Scope.2..CDP...tCO2.eq.,
-    -Total.emissions..CDP...tCO2.eq.) %>% scale()
+    -Total.emissions..CDP...tCO2.eq., 
+    -NA.) %>% scale()
 ```
 
 
@@ -201,7 +257,7 @@ plot(mod_lasso, n=20)
 ```{r}
 mod_lasso_reg <- train_VariSel(Y = Y, 
                            regressors = CO2_quant_full_exp,
-                           group = as.character(CO2_full$Region),
+                           group = Region,
                            type = "lasso_multi")
 plot(mod_lasso_reg)
 ```
@@ -215,6 +271,14 @@ mod_group_multi_regr<- train_VariSel(Y = Y,
                            type = "group_multi_regr")
 plot(mod_group_multi_regr, n =8)
 ```
+
+we also easily have acces to coefficient : 
+
+```{r}
+kable(head(coef(mod_group_multi_regr)))
+```
+
+
 
 ```{r}
 mod_lasso_reg <- train_VariSel(Y = Y, 
@@ -236,6 +300,7 @@ plot(mod_lasso_reg, n =6)
 
 
 ```{r}
+set.seed(123)
 plan(multiprocess)
 ct <- compar_type(Y = Y, 
         regressors = CO2_quant_full_exp,
@@ -243,128 +308,43 @@ ct <- compar_type(Y = Y,
         types = c("group_multi_regr" , "group_multi_both" ,
           "fused_multi_regr", "fused_multi_both",
           "lasso_multi", "lasso_univ" ))
-plot_ct(ct, criterion ="BIC")
+plot_ct(ct)
 
 bm <- get_best_models(ct, criterion ="MSE_boot")
 
 
-plot_md(bm, type = "group_multi_regr")
+plot_md(bm, type = "fused_multi_both")
 ```
 
 
-```{r}
-set.seed(123)
-n <- 1000
-p <- 5
-q <- 2
-s <- 0.1
-group <- sample(c("lapin", "chat"), n, replace = TRUE)
-kable(table(group))
-R <- matrix(rpois(n * p, 1), ncol = p)
-X <- model.matrix(~R:group -1)
-B <- matrix(0, ncol = q, nrow = p *2)
-B[grepl("R1", colnames(X)),] <- 1
-B[grepl("R2", colnames(X)),] <- 2
-# B[grepl("R3:grouplapin", colnames(X)),2] <- 1.5
-Y <- X %*% B + matrix(rnorm(n * q), ncol =q)
-
-plan(multiprocess)
-ct <- compar_type(X, Y, types = c("group_univ" ,"group_multi_both" ,"group_multi_marker" ,
-                              "fused_univ" ,"fused_multi_both","fused_multi_regr",
-                              "lasso_univ","lasso_multi" ),
-                  sep =":")
-plot_ct(ct)
-mb <- get_best_models(ct,criterion = "BIC")
-plot_md(mb)
-
-```
-
-
-```{r}
-load('datatest_VVIV04.Rdata')
-```
-
-
-## Model selection 
-
-```{r}
-system.time(
-ct <- compar_type(X[,1:10], Y, types = c("fus2resp",  "group_univ" ,"group_multi_both" ,"group_multi_marker" ,
-                              "fused_univ" ,"fused_multi_both","fused_multi_regr",
-                              "lasso_univ","lasso_multi" )))
-
-```
-
-
-```{r}
-plan(multiprocess)
-system.time(
-ct <- compar_type(X, Y, types = c("fus2resp",  "group_univ" ,"group_multi_both" ,"group_multi_marker" ,
-                              "fused_univ" ,"fused_multi_both","fused_multi_regr",
-                              "lasso_univ","lasso_multi" )))
-
-```
-
-
-```{r}
-require(microbenchmark)
-
-mb <- microbenchmark(
-  {plan(multiprocess) ;
-ct <- compar_type(X[,1:10], Y, types = c("fus2resp",  "group_univ" ,"group_multi_both" ,"group_multi_marker" ,
-                              "fused_univ" ,"fused_multi_both","fused_multi_regr",
-                              "lasso_univ","lasso_multi" ))}, 
-{plan(sequential) ;
-ct <- compar_type(X[,1:10], Y, types = c("fus2resp",  "group_univ" ,"group_multi_both" ,"group_multi_marker" ,
-                              "fused_univ" ,"fused_multi_both","fused_multi_regr",
-                              "lasso_univ","lasso_multi" ))
-                              },
-times = 10)
-autoplot(mb) + scale_x_discrete(labels =c("a","b"))
-```
-
+Even when influence by the model to have the same coefficient the explicative variables keep different coefficient according to the place 
 
 ```{r}
 
- ct$all_res %>% group_by(key, type) %>% filter(type!="fus2resp") %>% 
-  summarise(MSE = mean(MSE_boot), BIC = mean(BIC), lambda1 = mean(lambda1)) %>% 
-  ggplot(aes(x = lambda1, color = type, fill = type, y = BIC, shape = type)) +
-  geom_line() + theme_bw() + geom_point()+ scale_x_log10()+
-  labs(y = "MSE", title ="Bootstrap MSE", x = "Regularization Path") 
-
-
- ct$all_res %>% group_by(key, type) %>% 
-  summarise(MSE = mean(MSE_boot), BIC = mean(BIC), lambda1 = mean(lambda1)) %>% 
-   gather(key  = criterion, value = value, - key, -type, -lambda1) %>% 
-  ggplot(aes(x = lambda1, color = type, fill = type, y = value, shape = type)) +
-  geom_line() + theme_bw() + geom_point()+ scale_x_log10()+
-  labs(y = "MSE", title ="Bootstrap MSE", x = "Regularization Path") +
-   facet_wrap(~criterion,scale= "free")
+plot_md(bm)
 ```
+ 
 
-```{r}
- ct %>% mutate(key = as.numeric(gsub('s','',key))) %>%
-  ggplot(aes(x = key, color = type,fill = type, y = value)) +
-  geom_smooth() + theme_bw() +
-  labs(y = "MSE", title ="Bootstrap MSE", x = "Regularization Path") + 
-  facet_grid(~Trait) 
-```
+## When there is more reponses than  individuals 
 
 
 ```{r}
-mb <-get_best_models(ct,criterion = "MSE_boot")
-plot_md(mb, types = c("lasso_mutl","group_multi_marker","group_multi_both","fused_univ","fused_multi_regr"))
+require(MultiVarSel)
+dim(MultiVarSel::prot)
+kable(head(prot[, 1:10]))
+```
+
+In this case the number of reponses is the nulbver of proteines (724 for 9 individuals )
+
+```{r}
+mod_lasso_reg <- train_VariSel(Y =prot[,-1], 
+                           regressors = NULL,
+                           group = prot[,1],
+                           type = "lasso_multi",
+                           type_S12_inv = "Block")
+plot(mod_lasso_reg)
+kable(head(coef(mod_lasso_reg)))
 ```
 
 
 
-
-
-Chere marie du future,
-Le probleme vient du pmap qui calcul le bic dans QTLmodclass. 
-regarde le df lasso de efron et tout telechargé dans varisel
-
-
-faire une méthode compar_result qui compare les coefficients obtenu par les différents modèles. 
-
-ajouter aussi une fçon simple de récupérer les BIC des modèles sans pour autant faire du bootstrap et tous le bordel
