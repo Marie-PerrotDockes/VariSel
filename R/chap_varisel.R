@@ -20,7 +20,7 @@
 #'
 #' @examples
 train_VariSel <- function(X = NULL, Y, type, sepx = NULL, regressors =NULL, group=NULL, lambda = NULL,
-                          lambda1=NULL, lambda2 = NULL, Sigma_12inv = NULL, type_S12_inv = "fixed"){
+                          lambda1=NULL, lambda2 = NULL, Sigma_12inv = NULL, type_S12_inv = "emp",p = NULL, q =NULL){
 
   if(!is.null(X) & !is.null(regressors)) stop("either regressors and group must be supplied or X (the design matirx already full)")
   if(!is.null(sepx) & !is.null(group)) stop("either sepx or group must be supplied see the help of the function")
@@ -37,7 +37,7 @@ train_VariSel <- function(X = NULL, Y, type, sepx = NULL, regressors =NULL, grou
     lambda = list(lambda1 = lambda1, lambda2 = lambda2)
   }
   if(!is.matrix(Y)) Y <- as.matrix(Y)
-  if(ncol(Y) !=1 & is.null(Sigma_12inv)) Sigma_12inv <- get_S12inv(Y, X, type_S12_inv)
+  if(ncol(Y) !=1 & is.null(Sigma_12inv)) Sigma_12inv <- get_S12inv(Y, X, type_S12_inv, p = p, q = q)
    mod <- type_to_varisel(X, Y, type,
                           Sigma_12inv = Sigma_12inv, sep= sepx)
    mod$estime(lambda = lambda)

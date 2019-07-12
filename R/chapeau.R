@@ -178,7 +178,8 @@ compar_type <- function(X = NULL, Y, types,
                 Sigma_12inv = NULL,
                 group= NULL, a = 1, times = 10,  sep = "\\.",
                  regressors = NULL,
-                type_S12_inv ="emp"){
+                type_S12_inv ="emp",
+                p = NULL, q = NULL){
   if (is.null(X)){
     if(is.null(group) & is.null(regressors)) stop('Error if the design matrix X is not supplied at least one of group or regressors must be')
 
@@ -189,7 +190,7 @@ compar_type <- function(X = NULL, Y, types,
     sep <- ":"
   }
   if(!is.matrix(X)) X <- as.matrix(X)
-    if(ncol(Y) !=1 & is.null(Sigma_12inv)) Sigma_12inv <- get_S12inv(Y, X, type_S12_inv)
+    if(ncol(Y) !=1 & is.null(Sigma_12inv)) Sigma_12inv <- get_S12inv(Y, X, type_S12_inv, p = p, q =q)
   result <- types %>% as.list() %>% tibble() %>%
    transmute(compar = map(., ~bt_error(X, Y, .,
                               Sigma_12inv = Sigma_12inv, group = group, a = a ,

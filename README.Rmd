@@ -2,13 +2,27 @@
 title: 'VariSel : An a R package to perform variable selection in linear models'
 author: "Marie"
 date: "3 février 2019"
-output: html_document
-editor_options: 
+output:
+  pdf_document: default
+  html_document: default
+header-includes:
+- \usepackage{tikz}
+- \usepackage{natbib}
+- \usepackage{pgfplots}
+- \newcommand{\Am}{\textrm{Argmin}}
+- \newcommand{\bX}{\boldsymbol{X}}
+- \newcommand{\bY}{\boldsymbol{Y}}
+- \newcommand{\bS}{\boldsymbol{S}}
+- \usetikzlibrary{arrows, decorations.markings}
+- \usepackage{arydshln}
+- \definecolor{outcome}{RGB}{165,77,106}
+- \definecolor{darkred}{rgb}{0.65,0.15,0.25}
+editor_options:
   chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE, dev = "cairo_pdf")
 require(VariSel)
 require(tidyverse)
 require(tidymodels)
@@ -16,6 +30,8 @@ require(viridis)
 require(furrr)
 require(rlang)
 require(knitr)
+require(ggsci)
+require(BlockCov)
 theme_set(theme_bw() + 
             theme(strip.background = element_rect(fill = "white", color ="gray"), 
                   strip.text = element_text(color = "black"),
@@ -29,16 +45,15 @@ scale_colour_discrete <- function(...) scale_color_viridis(discrete = TRUE)
 
 ```
 
-## Introduction 
-### Statistical modelling 
-\framesubtitle{Understand the Gallic language}
- 
+# Introduction 
+## Statistical modelling 
+
 \begin{itemize}
 \item \textbf{Dataset description:}
 
 \begin{itemize}
-\item \textcolor{dc!70!black}{$\boldsymbol{X}$}:  $n\times p$ design matrix 
-\item \textcolor{lt!70!black}{$\boldsymbol{Y}$}:  $n\times q$  response matrix 
+\item $\boldsymbol{X}$:  $n\times p$ design matrix 
+\item $\boldsymbol{Y}$:  $n\times q$  response matrix 
 \end{itemize}
 
 \item \textbf{Question:} Which variables influence the responses?
@@ -59,35 +74,52 @@ where  \begin{itemize}
 \end{itemize}
 
 
-### Differents penalties : for different point of view
+## Differents penalties : for different point of view
 
 \begin{itemize}
-\item \textcolor{outcome}{\textbf{Lasso}} : \textit{select variables without taking into account  potential links.}
-\begin{equation*} \label{grouplasso}
-	\widehat{b}_L = \Am_{b} \left\lbrace||y-\bX b||_2^2 + \lambda ||b||_1 \right\rbrace,
+\item \textbf{Lasso} : \textit{select variables without taking into account  potential links.}
+\begin{equation*} 
+	\widehat{b}_L = \Am_{b} \left\lbrace||y-\mathcal{X} b||_2^2 + \lambda ||b||_1 \right\rbrace,
 \end{equation*}
-\item \textcolor{outcome}{\textbf{Group-Lasso}}  : \textit{select a group of variables.}
+\item \textbf{Group-Lasso}  : \textit{select a group of variables.}
 \begin{equation*} \label{grouplasso}
-	\widehat{b}_G = \Am_{b_1, \dots, b_L} \left\lbrace||y-\sum_{1 \leq \ell \leq L}\bX_{(\ell)} b_{(\ell)}||_2^2 + \lambda\sum_{1 \leq \ell \leq L}\sqrt{p_\ell} ||b_\ell||_2\right\rbrace,
+	\widehat{b}_G = \Am_{b_1, \dots, b_L} \left\lbrace||y-\sum_{1 \leq \ell \leq L}\mathcal{X}_{(\ell)} b_{(\ell)}||_2^2 + \lambda\sum_{1 \leq \ell \leq L}\sqrt{p_\ell} ||b_\ell||_2\right\rbrace,
 \end{equation*}
-\item \textcolor{outcome}{\textbf{Fused-Lasso}} :  \textit{influence a group of variables to have the same coefficient.}
+\item \textbf{Fused-Lasso} :  \textit{influence a group of variables to have the same coefficient.}
 \begin{equation*}\label{fuselasso}
-	\widehat{b}_F =\Am_{b}||y-\bX b||_2^2 + \left\lbrace\lambda_1\sum_{(i,j) \in \mathcal{G}} |b_i - b_j|+ \lambda_2 ||b||_1\right\rbrace,
+	\widehat{b}_F =\Am_{b}||y-\mathcal{X} b||_2^2 + \left\lbrace\lambda_1\sum_{(i,j) \in \mathcal{G}} |b_i - b_j|+ \lambda_2 ||b||_1\right\rbrace,
 \end{equation*}
 \end{itemize}
 
 
-## Package Installation 
+This differents penalties are here in univariate. In order to use them and in order to take into account the dependance that may exist among variables we propose the following transformation : 
 
-```{r}
-devtools::install_github("MariePerrotDockes/VariSel")
+ $\boldsymbol{Y}\widehat{\boldsymbol{\Sigma}}_q^{-1/2}  
+    =\boldsymbol{X}\boldsymbol{B}\widehat{\boldsymbol{\Sigma}}_q^{-1/2} ++ \boldsymbol{E}\widehat{\boldsymbol{\Sigma}}_q^{-1/2}$
+    \begin{align*}
+      {\mathcal{Y}}&=
+                     vec(\boldsymbol{Y}\widehat{\boldsymbol{\Sigma}}_q^{-1/2})  
+=vec(\boldsymbol{X}\boldsymbol{B}\widehat{\boldsymbol{\Sigma}}_q^{-1/2})
+                     +vec(\boldsymbol{E}\widehat{\boldsymbol{\Sigma}}_q^{-1/2})\\
+                   &=\textcolor{blue}{((\widehat{\boldsymbol{\Sigma}}_q^{-1/2})'\otimes \boldsymbol{X})}\textcolor{orange}{vec(\boldsymbol{B})}
+                     +\textcolor{darkred}{vec(\boldsymbol{E}\widehat{\boldsymbol{\Sigma}}_q^{-1/2})}\\
+                   &=\textcolor{blue}{\mathcal{X}}\textcolor{orange}{\mathcal{B}}+\textcolor{darkred}{\mathcal{E}}.
+    \end{align*} 
+
+This transformation need the estimation of the square root of the inverse of the covariance matrix $\boldsymbol{\Sigma}_q$.
+
+
+# Package Installation 
+
+```{r, eval= FALSE}
+devtools::install_github("Marie-PerrotDockes/VariSel")
 ```
 
 
-## First exemples : Iris dataset
+# First exemples : Iris dataset
 
 ```{r}
-lirbary(car)
+library(car)
 iris %>% 
   head() %>% 
   kable()
@@ -208,7 +240,7 @@ we will now use the dataset available and described in "A global dataset of CO2 
 The data are available in https://www.nature.com/articles/sdata2018280?WT.feed_name=subjects_environmental-social-sciences
 
 ```{r}
-CO2 <-xlsx::read.xlsx(file="Data/D_FINAL.xlsx", sheetIndex =1, header=TRUE)
+CO2 <-read.csv(file="Data/D_FINAL.csv", dec =",")
 dim(CO2)
 cc <-complete.cases(CO2[,c("Scope.1.GHG.emissions..tCO2.or.tCO2.eq.",
                            "Total.emissions..CDP...tCO2.eq.",
@@ -231,8 +263,7 @@ Y <- CO2_quant_full[,c("Scope.1.GHG.emissions..tCO2.or.tCO2.eq.",
 colnames(Y) <- c("Scope1", "Total")
 CO2_quant_full_exp <-CO2_quant_full %>%
   select(-Scope.1.GHG.emissions..tCO2.or.tCO2.eq.,
-    -Total.emissions..CDP...tCO2.eq., 
-    -NA.) %>% scale()
+    -Total.emissions..CDP...tCO2.eq.) %>% scale()
 ```
 
 
