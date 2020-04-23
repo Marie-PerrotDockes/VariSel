@@ -89,11 +89,12 @@ rsamples_to_mse <- function(rsamp, type, resp,
             MSE = map2(New_pred, New_y, ~ (.x - .y) ^ 2 %>%
                         as.matrix() %>%
                         as.data.frame() %>%
-                        mutate(Trait = trait) %>%
+                         mutate(Trait = trait) %>%
                         gather(key, value, -Trait, factor_key = FALSE) %>%
                         group_by(key, Trait) %>%
                         summarise(value = mean(value)))
             ) %>%
+     ungroup() %>%
      select(MSE) %>%
      unnest(MSE) %>%
      mutate(type = type)
@@ -101,8 +102,8 @@ rsamples_to_mse <- function(rsamp, type, resp,
    y <- Y_t %>%
      gather(key = "Trait") %>%
      group_by(Trait) %>%
-     nest(.key = Data) %>%
-     mutate(Data = map(Data, ~.$value)) %>%
+     nest() %>%
+     mutate(Data = map(data, ~.$value)) %>%
      pull(Data)
    a <- mod$res %>%
     mutate(New_y  = y,
@@ -324,7 +325,8 @@ predict.chapeau <- function(X, Y, univ, type,
 #'
 #' @examples
 get_best_models <- function(ct, criterion = "MSE_boot", sepy="_"){
-ct$all_res %>% group_by(key, Name, type) %>%
+  if(criterion == "MSE_boot"){
+Result <- ct$all_res %>% group_by(key, Name, type) %>%
     select(-id) %>% summarise_if(is.numeric, mean) %>% ungroup() %>%
     group_by(Name, type) %>%
     slice(which.min(!!parse_expr(criterion))) %>%
@@ -350,7 +352,41 @@ ct$all_res %>% group_by(key, Name, type) %>%
       is.na(Trait) ~ Name,
      ( !is.na(Trait)) ~Trait
       ))
+  }
 
+
+  if(criterion == "MSE_boot_1se"){
+    Result <- ct$all_res %>% group_by(key, Name, type) %>%
+      select(-id) %>% summarise(MSE_boot_mean = mean(MSE_boot), MSE_boot_se = sd(MSE_boot),
+                                MSE_boot_sum = MSE_boot_mean + MSE_boot_se) %>% ungroup() %>%
+      dplyr::group_by(Name, type) %>%
+      mutate( MSE_min = min(MSE_boot_sum)) %>%
+      filter(MSE_boot_mean < min(MSE_boot_sum)) %>%
+      slice(which.max(MSE_boot_mean)) %>%
+      mutate(num = case_when(
+        grepl("s", key)~ as.numeric(gsub("s","",key)) + 2,
+        grepl("V", key)~ as.numeric(gsub("V","",key)) + 1
+      )) %>% group_by(type) %>% nest() %>%
+      left_join(ct$Models, by ="type") %>%
+      mutate(data = map2(data,Models, ~.x %>%
+                           mutate(Beta=.y$res$Beta ,
+                                  Beta = map2(num, Beta, ~.y %>%
+                                                as.matrix() %>%
+                                                as.data.frame() %>%
+                                                rownames_to_column() %>%
+                                                select(coef =.x,rowname) %>%
+                                                separate(rowname, sep = "__",
+                                                         into = c("Trait", "Marker"),
+                                                         fill = "left"))) %>%
+                           unnest(Beta,.drop = FALSE))
+      ) %>%
+      unnest(data) %>%
+      mutate(Trait = case_when(
+        is.na(Trait) ~ Name,
+        ( !is.na(Trait)) ~Trait
+      ))
+  }
+  return(Result)
     }
 
 

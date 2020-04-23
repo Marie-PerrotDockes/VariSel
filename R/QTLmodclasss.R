@@ -77,8 +77,8 @@ VariSel <- R6::R6Class(
       private$tb <- private$y %>%
         gather(key = "Trait") %>%
         group_by(Trait) %>%
-        nest(.key = Data) %>%
-        mutate(Data = map(Data, ~ .$value))
+        nest() %>%
+        mutate(Data = map(data, ~ .$value))
     },
 
     estime = function() {
