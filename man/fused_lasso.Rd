@@ -4,8 +4,15 @@
 \alias{fused_lasso}
 \title{Title}
 \usage{
-fused_lasso(X, response, G, lambda2 = NULL, lambda1 = 0,
-  ratio = 0.001, nlambda2 = 100)
+fused_lasso(
+  X,
+  response,
+  G,
+  lambda2 = NULL,
+  lambda1 = 0,
+  ratio = 0.001,
+  nlambda2 = 100
+)
 }
 \arguments{
 \item{fixe_lambda1}{}

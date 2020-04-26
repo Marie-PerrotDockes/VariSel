@@ -4,13 +4,23 @@
 \alias{rsamples_to_mse}
 \title{Title}
 \usage{
-rsamples_to_mse(rsamp, type, resp, Sigma_12inv = diag(1, length(resp)),
-  lambda = NULL, grp = NULL, sep = "\\\\.")
+rsamples_to_mse(
+  rsamp,
+  type,
+  resp,
+  Sigma_12inv = diag(1, length(resp)),
+  lambda = NULL,
+  grp = NULL,
+  sep = "\\\\."
+)
 }
 \arguments{
 \item{rsamp}{a splits object with a collumn: response the response vector}
 
-\item{type}{type for varisel object}
+\item{type}{type of penalty to use.}
+}
+\value{
+
 }
 \description{
 Title

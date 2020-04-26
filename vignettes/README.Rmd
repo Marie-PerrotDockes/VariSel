@@ -3,8 +3,8 @@ title: 'VariSel : An a R package to perform variable selection in linear models'
 author: "Marie"
 date: "3 février 2019"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 header-includes:
 - \usepackage{tikz}
 - \usepackage{natbib}
@@ -22,7 +22,8 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE, dev = "cairo_pdf")
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE,
+                      dev = "cairo_pdf")
 require(VariSel)
 require(tidyverse)
 require(tidymodels)
@@ -32,6 +33,7 @@ require(rlang)
 require(knitr)
 require(ggsci)
 require(BlockCov)
+require(rsample)
 theme_set(theme_bw() + 
             theme(strip.background = element_rect(fill = "white", color ="gray"), 
                   strip.text = element_text(color = "black"),
@@ -41,7 +43,7 @@ scale_fill_continuous <- function(...) scale_fill_viridis()
 scale_fill_discrete <- function(...) scale_fill_viridis(discrete = TRUE)
 scale_colour_discrete <- function(...) scale_color_viridis()
 scale_colour_discrete <- function(...) scale_color_viridis(discrete = TRUE)
-
+require(dplyr)
 
 ```
 
@@ -170,12 +172,25 @@ plot(mod_group)
 Let's now compare differents types grouping or not the petal characteristics and influence it or not to have the same coefficients. 
 
 ```{r}
- plan(multiprocess)
-ct <- compar_type( Y = Y, X = Petal_char,  
-  types = c("group_multi_regr" , "group_multi_both" ,
-  "fused_multi_regr", "fused_multi_both",
-  "lasso_multi", "lasso_univ" ), times = 10)
-plot_ct(ct)
+col <- pal_uchicago()(6)
+m2 <-  train_VariSel( Y = Y, 
+                       X = Petal_char, 
+                       type ="group_multi_both", 
+                       sepx = "\\.")
+m3 <-  train_VariSel( Y = Y, 
+                       X = Petal_char, 
+                       type ="fused_multi_both", 
+                       sepx = "\\.")
+m4 <-  train_VariSel( Y = Y, 
+                       X = Petal_char, 
+                       type ="fused_multi_regr", 
+                       sepx = "\\.")
+
+```
+
+```{r}
+mods = list(mod_group,m2,m3,m4)
+p2 <- compar_path(mods)
 ```
 
 We can also propose different associations between petal characteristics and sepal charcateristics depending on the species. 
@@ -232,150 +247,5 @@ mod_lasso <-   train_VariSel( Y = Y,
 plot(mod_lasso)
 ```
  
-
-## A more serious exemple 
-
-we will now use the dataset available and described in "A global dataset of CO2 emissions and ancillary data related to emissions for 343 cities"
-
-The data are available in https://www.nature.com/articles/sdata2018280?WT.feed_name=subjects_environmental-social-sciences
-
-```{r}
-CO2 <-read.csv(file="Data/D_FINAL.csv", dec =",")
-dim(CO2)
-cc <-complete.cases(CO2[,c("Scope.1.GHG.emissions..tCO2.or.tCO2.eq.",
-                           "Total.emissions..CDP...tCO2.eq.",
-                           "Population..CDP.",
-                           "Average.annual.temperature..CDP...degrees.Celsius.",
-                           "Average.altitude..m.")])
-CO2_full <- CO2[cc, ]
-CO2_quant <- CO2_full %>% select_if(is.numeric)
-CO2_quant_full <- CO2_quant[,complete.cases(t(CO2_quant))]
-Region <- as.character(CO2_full$Region)
-Region[grepl('Asia', Region)] <- "Asia"
-kable(table(Region))
-```
-
-
-```{r}
-Y <- CO2_quant_full[,c("Scope.1.GHG.emissions..tCO2.or.tCO2.eq.",
-                      "Total.emissions..CDP...tCO2.eq.")] %>% 
-  scale()
-colnames(Y) <- c("Scope1", "Total")
-CO2_quant_full_exp <-CO2_quant_full %>%
-  select(-Scope.1.GHG.emissions..tCO2.or.tCO2.eq.,
-    -Total.emissions..CDP...tCO2.eq.) %>% scale()
-```
-
-
-First model : association between in different region 
-
-
-```{r}
-mod_lasso <- train_VariSel(Y = Y, 
-                           X = CO2_quant_full_exp,
-                           type = "lasso_multi")
-plot(mod_lasso)
-```
-
-
-You can choose to change the number of color variable (the one we can see as selected)
-
-```{r}
-plot(mod_lasso, n=20)
-```
-
-
-```{r}
-mod_lasso_reg <- train_VariSel(Y = Y, 
-                           regressors = CO2_quant_full_exp,
-                           group = Region,
-                           type = "lasso_multi")
-plot(mod_lasso_reg)
-```
-
-
-
-```{r}
-mod_group_multi_regr<- train_VariSel(Y = Y, 
-                           regressors = CO2_quant_full_exp,
-                           group = as.character(CO2_full$Region),
-                           type = "group_multi_regr")
-plot(mod_group_multi_regr, n =8)
-```
-
-we also easily have acces to coefficient : 
-
-```{r}
-kable(head(coef(mod_group_multi_regr)))
-```
-
-
-
-```{r}
-mod_lasso_reg <- train_VariSel(Y = Y, 
-                           regressors = CO2_quant_full_exp,
-                           group = as.character(CO2_full$Region),
-                           type = "group_multi_both")
-plot(mod_lasso_reg, n =6)
-```
-
-
-```{r}
-mod_lasso_reg <- train_VariSel(Y = Y, 
-                           regressors = CO2_quant_full_exp,
-                           group = as.character(CO2_full$Region),
-                           type = "fused_multi_both")
-plot(mod_lasso_reg, n =6)
-```
-
-
-
-```{r}
-set.seed(123)
-plan(multiprocess)
-ct <- compar_type(Y = Y, 
-        regressors = CO2_quant_full_exp,
-        group = as.character(CO2_full$Region),
-        types = c("group_multi_regr" , "group_multi_both" ,
-          "fused_multi_regr", "fused_multi_both",
-          "lasso_multi", "lasso_univ" ))
-plot_ct(ct)
-
-bm <- get_best_models(ct, criterion ="MSE_boot")
-
-
-plot_md(bm, type = "fused_multi_both")
-```
-
-
-Even when influence by the model to have the same coefficient the explicative variables keep different coefficient according to the place 
-
-```{r}
-
-plot_md(bm)
-```
- 
-
-## When there is more reponses than  individuals 
-
-
-```{r}
-require(MultiVarSel)
-dim(MultiVarSel::prot)
-kable(head(prot[, 1:10]))
-```
-
-In this case the number of reponses is the nulbver of proteines (724 for 9 individuals )
-
-```{r}
-mod_lasso_reg <- train_VariSel(Y =prot[,-1], 
-                           regressors = NULL,
-                           group = prot[,1],
-                           type = "lasso_multi",
-                           type_S12_inv = "Block")
-plot(mod_lasso_reg)
-kable(head(coef(mod_lasso_reg)))
-```
-
 
 

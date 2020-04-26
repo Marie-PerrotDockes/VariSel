@@ -4,8 +4,19 @@
 \alias{grpLassoQTL}
 \title{Give the result for a group lasso}
 \usage{
-grpLassoQTL(X, Y, marker, map, PFER = 1, B = 500, cutoff = 0.85,
-  nb.cores, sep = "\\\\.", mrk2lg, type_group = "both")
+grpLassoQTL(
+  X,
+  Y,
+  marker,
+  map,
+  PFER = 1,
+  B = 500,
+  cutoff = 0.85,
+  nb.cores,
+  sep = "\\\\.",
+  mrk2lg,
+  type_group = "both"
+)
 }
 \arguments{
 \item{X}{a matrix with the value of different allele for different Marker}

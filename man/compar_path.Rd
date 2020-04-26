@@ -9,6 +9,9 @@ compar_path(mods)
 \arguments{
 \item{mods}{}
 }
+\value{
+
+}
 \description{
 Title
 }

@@ -4,10 +4,13 @@
 \alias{plot_ct}
 \title{Title}
 \usage{
-plot_ct(ct, type = "MSE")
+plot_ct(ct, criterion = "MSE")
 }
 \arguments{
 \item{ct}{}
+}
+\value{
+
 }
 \description{
 Title

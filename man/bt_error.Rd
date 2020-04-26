@@ -4,11 +4,22 @@
 \alias{bt_error}
 \title{Title}
 \usage{
-bt_error(X, Y, type, Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
-  group = NULL, a = 1, times = 10, sep = "\\\\.")
+bt_error(
+  X,
+  Y,
+  type,
+  Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
+  group = NULL,
+  a = 1,
+  times = 10,
+  sep = "\\\\."
+)
 }
 \arguments{
 \item{a}{}
+}
+\value{
+
 }
 \description{
 Title

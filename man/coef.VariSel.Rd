@@ -9,6 +9,9 @@
 \arguments{
 \item{mod}{}
 }
+\value{
+
+}
 \description{
 Title
 }

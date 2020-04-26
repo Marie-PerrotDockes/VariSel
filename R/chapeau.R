@@ -18,7 +18,8 @@ type_to__S12inv <- function(X, Y, type){
 #' @param group an optional vector with 2 modalities use only if type = "fus2mod_univ",
 #'  the coefficients will be abble to be distinct for the two groups but encourage to be fused
 #'
-#'@importFrom R6 R6Class
+#' @import tidyr dplyr tibble
+#' @importFrom R6 R6Class
 #' @return
 #' @export
 type_to_varisel <- function(X, Y, type,
@@ -65,13 +66,13 @@ type_to_varisel <- function(X, Y, type,
 rsamples_to_mse <- function(rsamp, type, resp,
                            Sigma_12inv = diag(1, length(resp)),
                            lambda = NULL, grp = NULL,  sep = "\\."){
- Y_tr <- rsamp %>% analysis() %>% select(resp)
- X_tr <- rsamp %>% analysis() %>% select(-c(resp, grp))
- Y_t <- rsamp %>% assessment() %>% select(resp)
- X_t <- rsamp %>% assessment() %>% select(-c(resp, grp))
+ Y_tr <- rsamp %>% analysis() %>% dplyr::select(resp)
+ X_tr <- rsamp %>% analysis() %>% dplyr::select(-c(resp, grp))
+ Y_t <- rsamp %>% assessment() %>% dplyr::select(resp)
+ X_t <- rsamp %>% assessment() %>% dplyr::select(-c(resp, grp))
  if(!is.null(grp)){
-   group_tr <- rsamp %>% analysis() %>% select(grp)
-   group_t <- rsamp %>% assessment() %>% select(grp)
+   group_tr <- rsamp %>% analysis() %>% dplyr::select(grp)
+   group_t <- rsamp %>% assessment() %>% dplyr::select(grp)
  } else{
    group_tr <- NULL
    new_group <- NULL
@@ -95,7 +96,7 @@ rsamples_to_mse <- function(rsamp, type, resp,
                         summarise(value = mean(value)))
             ) %>%
      ungroup() %>%
-     select(MSE) %>%
+     dplyr::select(MSE) %>%
      unnest(MSE) %>%
      mutate(type = type)
     } else {
@@ -113,7 +114,7 @@ rsamples_to_mse <- function(rsamp, type, resp,
                        group_by(key) %>%
                        summarise(value = mean(value)))
            ) %>%
-    select(MSE, Trait) %>%
+    dplyr::select(MSE, Trait) %>%
     unnest(MSE) %>%
     mutate(type = type)
 }
@@ -197,9 +198,9 @@ compar_type <- function(X = NULL, Y, types,
                               Sigma_12inv = Sigma_12inv, group = group, a = a ,
                               times = times,  sep = sep)))
   Models <- result %>% mutate(Models = map(compar, ~extract2(.,2))) %>%
-    select(-compar) %>% mutate(type = types)
+    dplyr::select(-compar) %>% mutate(type = types)
   res_MSE <- result %>% mutate(MSE = map(compar, ~extract2(.,1))) %>%
-    select(-compar) %>%
+    dplyr::select(-compar) %>%
    unnest()
   all_res <- Models %>%
     mutate(Trait = map(Models, ~.$trait),
@@ -219,7 +220,7 @@ compar_type <- function(X = NULL, Y, types,
              rep(.$name_y, length(.$trait))
            })
            ) %>%
-    select(-Models) %>%
+    dplyr::select(-Models) %>%
     unnest() %>%
     mutate(BIC = map(BIC, ~gather(., key = "key", value ="BIC")),
            Lambda = map(Lambda, ~ if(is.list(.)){
@@ -284,7 +285,7 @@ chapeau <- function(X, Y, type,
                          rowid_to_column(var = "num_lambda")),
            Lambda = map(Lambda, ~as_tibble(.) %>%
                           dplyr::rename(Lambda = value))) %>%
-    select(Lambda, Beta, Trait) %>%
+    dplyr::select(Lambda, Beta, Trait) %>%
     unnest(Lambda, Beta) %>%
     gather(-Trait, -Lambda, -num_lambda, key = Marker, value = value) %>%
     filter(value != 0) %>% arrange(num_lambda)
@@ -293,7 +294,7 @@ chapeau <- function(X, Y, type,
      mutate(Group = gsub("group", "", Group))
  }
  if (!univ) {
-  res <-  res %>% select(-Trait) %>%
+  res <-  res %>% dplyr::select(-Trait) %>%
     separate(Marker, sep = mod$sepy, into = c("Trait", "Marker"))
  }
 
@@ -327,7 +328,7 @@ predict.chapeau <- function(X, Y, univ, type,
 get_best_models <- function(ct, criterion = "MSE_boot", sepy="_"){
   if(criterion == "MSE_boot"){
 Result <- ct$all_res %>% group_by(key, Name, type) %>%
-    select(-id) %>% summarise_if(is.numeric, mean) %>% ungroup() %>%
+    dplyr::select(-id) %>% summarise_if(is.numeric, mean) %>% ungroup() %>%
     group_by(Name, type) %>%
     slice(which.min(!!parse_expr(criterion))) %>%
     mutate(num = case_when(
@@ -341,7 +342,7 @@ Result <- ct$all_res %>% group_by(key, Name, type) %>%
             as.matrix() %>%
             as.data.frame() %>%
             rownames_to_column() %>%
-            select(coef =.x,rowname) %>%
+            dplyr::select(coef =.x,rowname) %>%
             separate(rowname, sep = "__",
                      into = c("Trait", "Marker"),
                      fill = "left"))) %>%
@@ -357,7 +358,7 @@ Result <- ct$all_res %>% group_by(key, Name, type) %>%
 
   if(criterion == "MSE_boot_1se"){
     Result <- ct$all_res %>% group_by(key, Name, type) %>%
-      select(-id) %>% summarise(MSE_boot_mean = mean(MSE_boot), MSE_boot_se = sd(MSE_boot),
+      dplyr::select(-id) %>% summarise(MSE_boot_mean = mean(MSE_boot), MSE_boot_se = sd(MSE_boot),
                                 MSE_boot_sum = MSE_boot_mean + MSE_boot_se) %>% ungroup() %>%
       dplyr::group_by(Name, type) %>%
       mutate( MSE_min = min(MSE_boot_sum)) %>%
@@ -374,7 +375,7 @@ Result <- ct$all_res %>% group_by(key, Name, type) %>%
                                                 as.matrix() %>%
                                                 as.data.frame() %>%
                                                 rownames_to_column() %>%
-                                                select(coef =.x,rowname) %>%
+                                                dplyr::select(coef =.x,rowname) %>%
                                                 separate(rowname, sep = "__",
                                                          into = c("Trait", "Marker"),
                                                          fill = "left"))) %>%

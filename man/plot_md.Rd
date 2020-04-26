@@ -9,6 +9,9 @@ plot_md(bmd, types = NULL)
 \arguments{
 \item{bmd}{}
 }
+\value{
+
+}
 \description{
 Title
 }

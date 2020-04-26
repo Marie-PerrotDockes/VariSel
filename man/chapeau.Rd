@@ -4,11 +4,20 @@
 \alias{chapeau}
 \title{Title}
 \usage{
-chapeau(X, Y, type, Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
-  group = NULL, a = 1)
+chapeau(
+  X,
+  Y,
+  type,
+  Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
+  group = NULL,
+  a = 1
+)
 }
 \arguments{
 \item{Sigma_12inv}{}
+}
+\value{
+
 }
 \description{
 Title

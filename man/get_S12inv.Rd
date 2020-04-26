@@ -4,10 +4,13 @@
 \alias{get_S12inv}
 \title{Title}
 \usage{
-get_S12inv(Y, X, type)
+get_S12inv(Y, X, type, p = NULL, q = NULL)
 }
 \arguments{
 \item{type}{}
+}
+\value{
+
 }
 \description{
 Title

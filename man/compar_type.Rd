@@ -4,12 +4,26 @@
 \alias{compar_type}
 \title{Title}
 \usage{
-compar_type(X = NULL, Y, types, Sigma_12inv = NULL, group = NULL,
-  a = 1, times = 10, sep = "\\\\.", regressors = NULL,
-  type_S12_inv = "emp")
+compar_type(
+  X = NULL,
+  Y,
+  types,
+  Sigma_12inv = NULL,
+  group = NULL,
+  a = 1,
+  times = 10,
+  sep = "\\\\.",
+  regressors = NULL,
+  type_S12_inv = "emp",
+  p = NULL,
+  q = NULL
+)
 }
 \arguments{
 \item{times}{}
+}
+\value{
+
 }
 \description{
 Title

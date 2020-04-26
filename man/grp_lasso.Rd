@@ -4,8 +4,14 @@
 \alias{grp_lasso}
 \title{Description of the function}
 \usage{
-grp_lasso(X, y, group, lambda = NULL, dfmax = as.integer(max(group)) +
-  1, pmax = min(dfmax * 1.2, as.integer(max(group))))
+grp_lasso(
+  X,
+  y,
+  group,
+  lambda = NULL,
+  dfmax = as.integer(max(group)) + 1,
+  pmax = min(dfmax * 1.2, as.integer(max(group)))
+)
 }
 \description{
 Description of the function

@@ -4,12 +4,49 @@
 \alias{train_VariSel}
 \title{Title}
 \usage{
-train_VariSel(X = NULL, Y, type, sepx = NULL, regressors = NULL,
-  group = NULL, lambda = NULL, lambda1 = NULL, lambda2 = NULL,
-  Sigma_12inv = NULL, type_S12_inv = "fixed")
+train_VariSel(
+  X = NULL,
+  Y,
+  type,
+  sepx = NULL,
+  regressors = NULL,
+  group = NULL,
+  lambda = NULL,
+  lambda1 = NULL,
+  lambda2 = NULL,
+  Sigma_12inv = NULL,
+  type_S12_inv = "emp",
+  p = NULL,
+  q = NULL
+)
 }
 \arguments{
-\item{lambda2}{}
+\item{X}{a design matrix of explicatives variables for the linear model}
+
+\item{Y}{a matrix of responses}
+
+\item{type}{the type of models to fit. See details for a description of the different types.}
+
+\item{sepx}{if the type use fused lasso or group lasso on the columns of X it is the character separating the group value to the identifier values.
+For instance if the names of the columns of X are gene.allele  and if we want to group variable that belong to the same gene use sepx=".".}
+
+\item{regressors}{if X is null and we are interested in the association between regressors and reponses in different group this is a matrix of regressors.}
+
+\item{group}{this is a charcater vector containing the different groups. It side must be the number of row of the matrix regressors.
+It indiciate for each rows in which group it is.}
+
+\item{lambda}{default to null. A numeric vector containing values for the regularisation parameter for lasso and group-lasso penalties.}
+
+\item{lambda1}{default to null. A numeric vector containing values for the lambda1 parameters (sparsity parmater for the fused lasso penalties).}
+
+\item{lambda2}{default to null. A numeric vector containing values for the lambda2 parameters (fusion parmater for the fused lasso penalties).}
+
+\item{Sigma_12inv}{a matrix of the square root of the inverse of the covariance matrix of the residuals. ( Use to remoove the dependance that may exist among the responses)}
+
+\item{type_S12_inv}{if Sigma_12inv is null it can be estimated using different type. See details for the differents types available.}
+}
+\value{
+a VariSel object.
 }
 \description{
 Title

@@ -4,8 +4,15 @@
 \alias{type_to_varisel}
 \title{Title}
 \usage{
-type_to_varisel(X, Y, type, Sigma_12inv = diag(1,
-  ncol(as.data.frame(Y))), group, a = 1, sep = "\\\\.")
+type_to_varisel(
+  X,
+  Y,
+  type,
+  Sigma_12inv = diag(1, ncol(as.data.frame(Y))),
+  group,
+  a = 1,
+  sep = "\\\\."
+)
 }
 \arguments{
 \item{X}{design matrix}
@@ -18,6 +25,9 @@ type_to_varisel(X, Y, type, Sigma_12inv = diag(1,
 
 \item{group}{an optional vector with 2 modalities use only if type = "fus2mod_univ",
 the coefficients will be abble to be distinct for the two groups but encourage to be fused}
+}
+\value{
+
 }
 \description{
 Title

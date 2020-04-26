@@ -4,8 +4,16 @@
 \alias{gglasso_st_tot}
 \title{Description of the function}
 \usage{
-gglasso_st_tot(X, Y, group = NULL, sep = "\\\\.", nb.cores = 7,
-  B = 500, PFER = 1, type_group)
+gglasso_st_tot(
+  X,
+  Y,
+  group = NULL,
+  sep = "\\\\.",
+  nb.cores = 7,
+  B = 500,
+  PFER = 1,
+  type_group
+)
 }
 \arguments{
 \item{group}{a vector with two levels. (The group of the ANCOVA)}
